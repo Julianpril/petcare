@@ -7,16 +7,16 @@ import Navbar from '../../components/navbar';
 
 function ConditionalNavbar(props: BottomTabBarProps) {
   const currentRoute = props.state.routes[props.state.index];
-  
+
   if (currentRoute.name === 'index') {
     return null;
   }
-  
+
   return <Navbar {...props} />;
 }
 
 export default function TabsLayout() {
-  
+
   return (
     <Tabs
       tabBar={(props: BottomTabBarProps) => <ConditionalNavbar {...props} />}

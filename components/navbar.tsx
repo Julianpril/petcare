@@ -13,7 +13,6 @@ const ICONS = [
   { key: 'user', name: 'user', lib: Feather },
 ];
 
-// Define route mapping to fix TypeScript error
 const ROUTE_MAP: Record<string, string> = {
   'index': '/(tabs)',
   'explore': '/(tabs)/explore',
