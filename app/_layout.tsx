@@ -1,29 +1,55 @@
-//app/_layout.tsx
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
+// app/_layout.tsx (Layout principal)
+import React, { useEffect } from 'react';
+import { Stack, useRouter, useSegments } from 'expo-router';
+import { AuthProvider, useAuth } from './Auth';
 
-import { useColorScheme } from '@/hooks/useColorScheme';
+function NavigationHandler({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, loading } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    console.log('NavigationHandler - Estado:', { isAuthenticated, loading, segments });
+    
+    if (loading) return;
+
+    const inAuthGroup = segments[0] === '(tabs)';
+    console.log('En grupo auth (tabs):', inAuthGroup);
+
+    if (!isAuthenticated && inAuthGroup) {
+      console.log('Usuario no autenticado, redirigiendo a login');
+      router.replace('/login');
+    } else if (isAuthenticated && segments[0] === 'login') {
+      console.log('Usuario autenticado en login, redirigiendo a tabs');
+      router.replace('/(tabs)');
+    } else if (isAuthenticated && !segments.length) {
+      console.log('Usuario autenticado en root, redirigiendo a tabs');
+      router.replace('/(tabs)');
+    }
+  }, [isAuthenticated, segments, loading, router]);
+
+  return <>{children}</>;
+}
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
-
-  if (!loaded) {
-    return null;
-  }
-
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <AuthProvider>
+      <NavigationHandler>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen 
+            name="login" 
+            options={{ 
+              headerShown: false,
+              presentation: 'fullScreenModal'
+            }} 
+          />
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="saludChat" />
+          <Stack.Screen name="recordatorios" />
+          <Stack.Screen name="comida" />
+          <Stack.Screen name="Adoptar" />
+        </Stack>
+      </NavigationHandler>
+    </AuthProvider>
   );
 }
