@@ -40,7 +40,7 @@ export default function HomeScreen() {
     {
       icon: 'plus-circle' as FeatherIconName,
       label: 'Agregar mascota',
-      onPress: () => console.log('Agregar mascota'),
+      onPress: () => router.push('/addAnimalsbtn'), 
       color: '#ff6f61'
     },
     {

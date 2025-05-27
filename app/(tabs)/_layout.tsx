@@ -5,11 +5,21 @@ import { Platform } from 'react-native';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import Navbar from '../../components/navbar';
 
+function ConditionalNavbar(props: BottomTabBarProps) {
+  const currentRoute = props.state.routes[props.state.index];
+  
+  if (currentRoute.name === 'index') {
+    return null;
+  }
+  
+  return <Navbar {...props} />;
+}
+
 export default function TabsLayout() {
   
   return (
     <Tabs
-      tabBar={(props: BottomTabBarProps) => <Navbar {...props} />}
+      tabBar={(props: BottomTabBarProps) => <ConditionalNavbar {...props} />}
       screenOptions={{
         headerShown: false,
         tabBarStyle: Platform.select({
