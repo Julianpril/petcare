@@ -1,4 +1,4 @@
-// app/Auth.tsx (optimizado)
+// app/Auth.tsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 type AuthContextType = {
@@ -23,8 +23,6 @@ type User = {
   username: string;
   password: string;
 };
-
-// Usuarios locales para autenticación rápida
 const LOCAL_USERS: User[] = [
   { username: 'usuario1', password: 'contrasena1' },
   { username: 'usuario2', password: 'contrasena2' },
@@ -38,19 +36,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Reducir el tiempo de inicialización
     const timer = setTimeout(() => {
       setLoading(false);
-    }, 50); // Reducido de 100ms a 50ms
+    }, 50);
 
     return () => clearTimeout(timer);
   }, []);
-
+ 
   const login = async (username: string, password: string): Promise<boolean> => {
     try {
       console.log('Intentando login con:', { username });
       
-      // Autenticación local instantánea
       const user = LOCAL_USERS.find((u: User) => 
         u.username === username && u.password === password
       );
@@ -61,12 +57,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return true;
       }
 
-      // Si no encuentra en local, intenta con API (con timeout corto)
       try {
         console.log('Intentando con API externa...');
         
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 segundos máximo
+        const timeoutId = setTimeout(() => controller.abort(), 3000); 
         
         const response = await fetch('https://mocki.io/v1/0129b912-c783-49b3-89dd-fa1f6c9467a7', {
           signal: controller.signal

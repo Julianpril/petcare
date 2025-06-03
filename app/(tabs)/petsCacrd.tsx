@@ -1,6 +1,7 @@
 //app/(tabs)/petsCard.tsx
-import React from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Image, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 
 type PetCardProps = {
   name: string;
@@ -10,6 +11,8 @@ type PetCardProps = {
   weight?: string;
   traits?: string[];
   onPress?: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
 };
 
 export default function PetCard({ 
@@ -19,14 +22,55 @@ export default function PetCard({
   age, 
   weight, 
   traits = [],
-  onPress 
+  onPress,
+  onEdit,
+  onDelete
 }: PetCardProps) {
+  const [showActions, setShowActions] = useState(false);
+
+  const handleDelete = () => {
+    Alert.alert(
+      "Eliminar mascota",
+      `¿Estás seguro de que quieres eliminar a ${name}? Esta acción no se puede deshacer.`,
+      [
+        {
+          text: "Cancelar",
+          style: "cancel"
+        },
+        {
+          text: "Eliminar",
+          style: "destructive",
+          onPress: () => {
+            onDelete?.();
+            setShowActions(false);
+          }
+        }
+      ]
+    );
+  };
+
+  const handleEdit = () => {
+    onEdit?.();
+    setShowActions(false);
+  };
+
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.9}>
       <Image source={{ uri: imageUrl }} style={styles.image} />
       <View style={styles.content}>
-        <Text style={styles.name}>{name}</Text>
-        <Text style={styles.breed}>{breed}</Text>
+        <View style={styles.header}>
+          <View style={styles.nameSection}>
+            <Text style={styles.name}>{name}</Text>
+            <Text style={styles.breed}>{breed}</Text>
+          </View>
+          
+          <TouchableOpacity 
+            style={styles.menuButton}
+            onPress={() => setShowActions(!showActions)}
+          >
+            <Feather name="more-vertical" size={20} color="#AAB4C0" />
+          </TouchableOpacity>
+        </View>
         
         <View style={styles.detailsContainer}>
           {age && (
@@ -51,6 +95,26 @@ export default function PetCard({
                 <Text style={styles.traitText}>{trait}</Text>
               </View>
             ))}
+          </View>
+        )}
+
+        {showActions && (
+          <View style={styles.actionsContainer}>
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.editButton]}
+              onPress={handleEdit}
+            >
+              <Feather name="edit-2" size={16} color="#47a9ff" />
+              <Text style={[styles.actionText, styles.editText]}>Editar</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.deleteButton]}
+              onPress={handleDelete}
+            >
+              <Feather name="trash-2" size={16} color="#ff6f61" />
+              <Text style={[styles.actionText, styles.deleteText]}>Eliminar</Text>
+            </TouchableOpacity>
           </View>
         )}
       </View>
@@ -83,6 +147,15 @@ const styles = StyleSheet.create({
     paddingLeft: 0,
     justifyContent: 'center',
   },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  nameSection: {
+    flex: 1,
+  },
   name: {
     fontSize: 18,
     fontWeight: '600',
@@ -92,7 +165,10 @@ const styles = StyleSheet.create({
   breed: {
     fontSize: 14,
     color: '#AAB4C0',
-    marginBottom: 8,
+  },
+  menuButton: {
+    padding: 4,
+    borderRadius: 8,
   },
   detailsContainer: {
     flexDirection: 'row',
@@ -113,6 +189,7 @@ const styles = StyleSheet.create({
   traitsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    marginBottom: 8,
   },
   trait: {
     backgroundColor: 'rgba(255, 111, 97, 0.2)',
@@ -124,6 +201,41 @@ const styles = StyleSheet.create({
   },
   traitText: {
     fontSize: 11,
+    color: '#ff6f61',
+  },
+  actionsContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#2A3A4A',
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 4,
+  },
+  editButton: {
+    borderColor: '#47a9ff',
+    backgroundColor: 'rgba(71, 169, 255, 0.1)',
+  },
+  deleteButton: {
+    borderColor: '#ff6f61',
+    backgroundColor: 'rgba(255, 111, 97, 0.1)',
+  },
+  actionText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  editText: {
+    color: '#47a9ff',
+  },
+  deleteText: {
     color: '#ff6f61',
   },
 });

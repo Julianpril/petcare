@@ -1,4 +1,4 @@
-// app/_layout.tsx (Layout principal actualizado)
+// app/_layout.tsx
 import React, { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { AuthProvider, useAuth } from './Auth';

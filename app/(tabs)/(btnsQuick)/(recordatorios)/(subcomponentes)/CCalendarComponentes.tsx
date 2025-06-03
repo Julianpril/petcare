@@ -2,7 +2,7 @@ import React, { useMemo, useCallback } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Calendar, DateData } from 'react-native-calendars';
 import { CalendarComponentProps } from './interfaz';
-import { getTypeColor } from './utilsReordatorios';
+import { getDotColor } from './utilsReordatorios';
 
 const CalendarComponent: React.FC<CalendarComponentProps> = ({
   selectedDate,
@@ -12,19 +12,48 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
   const markedDates = useMemo(() => {
     const marks: { [key: string]: any } = {};
 
+    const appointmentsByDate: { [key: string]: any[] } = {};
+    
     appointments.forEach(appointment => {
-      marks[appointment.date] = {
-        marked: true,
-        dotColor: getTypeColor(appointment.type),
-      };
+      if (!appointmentsByDate[appointment.date]) {
+        appointmentsByDate[appointment.date] = [];
+      }
+      appointmentsByDate[appointment.date].push(appointment);
     });
 
+    Object.keys(appointmentsByDate).forEach(date => {
+      const dayAppointments = appointmentsByDate[date];
+      
+      if (dayAppointments.length === 1) {
+        marks[date] = {
+          marked: true,
+          dotColor: getDotColor(dayAppointments[0].type),
+        };
+      } else {
+        const dots = dayAppointments.slice(0, 3).map(appointment => ({
+          color: getDotColor(appointment.type),
+        }));
+        
+        marks[date] = {
+          dots: dots,
+        };
+      }
+    });
     if (selectedDate) {
-      marks[selectedDate] = {
-        ...marks[selectedDate],
-        selected: true,
-        selectedColor: '#3E6D9C',
-      };
+      if (marks[selectedDate]) {
+        marks[selectedDate] = {
+          ...marks[selectedDate],
+          selected: true,
+          selectedColor: '#47a9ff',
+          selectedTextColor: '#FFFFFF',
+        };
+      } else {
+        marks[selectedDate] = {
+          selected: true,
+          selectedColor: '#47a9ff',
+          selectedTextColor: '#FFFFFF',
+        };
+      }
     }
 
     return marks;
@@ -36,14 +65,14 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
 
   const theme = {
     backgroundColor: '#122432',
-    calendarBackground: '#1B2A3A',
+    calendarBackground: '#1E2A38',
     textSectionTitleColor: '#EAEAEA',
-    selectedDayBackgroundColor: '#3E6D9C',
+    selectedDayBackgroundColor: '#47a9ff',
     selectedDayTextColor: '#FFFFFF',
-    todayTextColor: '#FF9800',
+    todayTextColor: '#ff6f61',
     dayTextColor: '#EAEAEA',
     textDisabledColor: '#555',
-    dotColor: '#FF9800',
+    dotColor: '#47a9ff',
     selectedDotColor: '#FFFFFF',
     arrowColor: '#EAEAEA',
     monthTextColor: '#EAEAEA',
@@ -53,7 +82,10 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
     textDayHeaderFontWeight: '600' as const,
     textDayFontSize: 16,
     textMonthFontSize: 18,
-    textDayHeaderFontSize: 14
+    textDayHeaderFontSize: 14,
+    dotStyle: {
+      marginTop: 2,
+    },
   };
 
   return (
@@ -68,6 +100,8 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
         showWeekNumbers={false}
         disableMonthChange={false}
         enableSwipeMonths={true}
+        markingType={'multi-dot'} 
+        dayComponent={undefined} 
       />
     </View>
   );
@@ -75,14 +109,23 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
 
 const styles = StyleSheet.create({
   calendarContainer: {
-    backgroundColor: '#1B2A3A',
+    backgroundColor: '#1E2A38',
     marginHorizontal: 16,
     borderRadius: 12,
-    padding: 8,
+    padding: 12,
     marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   calendar: {
-    borderRadius: 12,
+    borderRadius: 8,
+    backgroundColor: '#1E2A38',
   },
 });
 
