@@ -1,0 +1,27 @@
+{
+  "include": [
+    "pawmi-ml/src",
+    "pawmi-ml/scripts",
+    "pawmi-backend/app",
+    "app"
+  ],
+  "exclude": [
+    "**/node_modules",
+    "**/__pycache__",
+    "**/.venv",
+    "**/venv",
+    "pawmi-ml/venv",
+    "pawmi-ml/venv_unidad3",
+    "IA-Course-UdB",
+    ".venv/**"
+  ],
+  "venvPath": ".",
+  "venv": ".venv",
+  "pythonVersion": "3.13",
+  "pythonPlatform": "Windows",
+  "typeCheckingMode": "basic",
+  "reportMissingImports": "none",
+  "reportMissingTypeStubs": false,
+  "reportOptionalSubscript": "warning",
+  "reportOptionalMemberAccess": "warning"
+}

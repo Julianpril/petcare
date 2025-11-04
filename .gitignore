@@ -1,7 +1,9 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
+# ===== FRONTEND (React Native/Expo) =====
 # dependencies
 node_modules/
+pawmi-frontend/node_modules/
 
 # Expo
 .expo/
@@ -21,6 +23,24 @@ expo-env.d.ts
 # Metro
 .metro-health-check*
 
+# ===== BACKEND & ML (Python) =====
+# Python virtual environments
+.venv/
+.venv-py311/
+venv/
+pawmi-ml/venv/
+pawmi-ml/venv_unidad3/
+pawmi-backend/venv/
+*.pyc
+__pycache__/
+
+# Python ML models & data
+pawmi-ml/models/
+pawmi-ml/logs/
+pawmi-ml/.ipynb_checkpoints/
+
+# Education materials (optional)
+IA-Course-UdB/
 # debug
 npm-debug.*
 yarn-debug.*

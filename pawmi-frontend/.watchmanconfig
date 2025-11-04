@@ -1,0 +1,10 @@
+{
+  "ignore_dirs": [
+    ".venv",
+    "venv",
+    "pawmi-ml",
+    "pawmi-backend",
+    ".git",
+    "node_modules"
+  ]
+}

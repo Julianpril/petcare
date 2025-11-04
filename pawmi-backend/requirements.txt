@@ -1,0 +1,32 @@
+﻿# FastAPI
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.6.0
+pydantic-settings>=2.1.0
+
+# Database
+sqlalchemy>=2.0.0
+alembic>=1.13.0
+psycopg2-binary>=2.9.9  # PostgreSQL
+
+# Authentication
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+python-multipart>=0.0.9
+google-auth>=2.27.0  # Para verificar tokens de Google OAuth
+
+# ML Model Loading
+joblib>=1.3.0
+scikit-learn>=1.5.0
+
+# Computer Vision & AI
+transformers>=4.36.0
+torch>=2.0.0
+torchvision>=0.15.0
+Pillow>=10.0.0
+accelerate>=0.20.0  # Para optimizar carga de modelos
+
+# Utilities
+python-dotenv>=1.0.0
+loguru>=0.7.0
+requests>=2.31.0  # Para llamadas a Ollama
