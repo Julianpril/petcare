@@ -1,0 +1,397 @@
+{
+  "version": "1.0",
+  "locale": "es",
+  "tone": "tierno-amigable",
+  "description": "Flujo de preguntas prediagnóstico para perros y gatos, corto y conversacional. Usa bloques condicionales según especie y síntomas reportados.",
+  "ui_text": {
+    "progress_hint": "Ya casi terminamos 🐾",
+    "skip_label": "saltar",
+    "dont_know_label": "no estoy seguro/a"
+  },
+  "flow": [
+    {
+      "id": "intro",
+      "type": "messages",
+      "messages": [
+        "¡Hola! Soy tu asistente veterinario peludito 🐶🐱💙",
+        "Cuéntame un poquito sobre tu compi de cuatro patas y yo te ayudo."
+      ],
+      "next": "identificacion"
+    },
+    {
+      "id": "identificacion",
+      "type": "questions",
+      "questions": [
+        {
+          "id": "q_especie",
+          "text": "¿Tu compañero es un perrito o un gatito? 🐶🐱",
+          "type": "single_choice",
+          "options": ["perro", "gato"],
+          "required": true
+        },
+        {
+          "id": "q_edad",
+          "text": "¿Cuántos añitos tiene? (puedes poner meses si es peque) 🎂",
+          "type": "open_text",
+          "placeholder": "ej. 6 meses, 3 años",
+          "map_to": "age",
+          "required": true
+        },
+        {
+          "id": "q_vacunas",
+          "text": "¿Tiene sus vacunitas al día? 💉",
+          "type": "single_choice",
+          "options": ["sí", "no", "no estoy seguro/a"],
+          "map_to": "vaccines_up_to_date"
+        }
+      ],
+      "next": "captura_libre"
+    },
+    {
+      "id": "captura_libre",
+      "type": "questions",
+      "questions": [
+        {
+          "id": "q_describe",
+          "text": "En tus palabras, ¿qué notaste? Escribe lo que veas (tos, estornudos, diarrea, vómitos, decaimiento, etc.) ✍️",
+          "type": "open_text",
+          "map_to": "user_reported_text"
+        }
+      ],
+      "post_process": {
+        "intent": "extract_symptoms",
+        "into_array": "symptoms_detected"
+      },
+      "next": "bloque_gravedad"
+    },
+    {
+      "id": "bloque_gravedad",
+      "type": "questions",
+      "messages": ["Gracias por contarme 💙. Haré un par de preguntitas rápidas para entender qué tan urgente es."],
+      "questions": [
+        {
+          "id": "q_fiebre",
+          "text": "¿Sientes su naricita caliente o te han dicho que tiene fiebre? 🌡️",
+          "type": "single_choice",
+          "options": ["sí", "no", "no estoy seguro/a"],
+          "map_to": "fever"
+        },
+        {
+          "id": "q_decaimiento",
+          "text": "¿Lo notas más cansado o decaído que de costumbre? 😴",
+          "type": "single_choice",
+          "options": ["sí", "no"],
+          "map_to": "lethargy"
+        },
+        {
+          "id": "q_duracion",
+          "text": "¿Desde cuándo pasa esto? ⏱️",
+          "type": "single_choice",
+          "options": ["menos de 48 h", "2–7 días", "más de 1 semana"],
+          "map_to": "duration_bucket"
+        }
+      ],
+      "routing_rules": [
+        {
+          "when": "q_decaimiento == 'sí' && q_duracion == 'más de 1 semana'",
+          "next": "bloque_metabolico"
+        }
+      ],
+      "default_next": "router_por_sistemas"
+    },
+    {
+      "id": "router_por_sistemas",
+      "type": "router",
+      "rules": [
+        {
+          "when": "includes(symptoms_detected,['vomitos','diarrea','diarrea_hemorragica','dolor_abdominal'])",
+          "next": "bloque_digestivo"
+        },
+        {
+          "when": "includes(symptoms_detected,['tos','estornudos','secrecion_nasal','secrecion_ocular','dificultad_respirar','jadeo'])",
+          "next": "bloque_respiratorio"
+        },
+        {
+          "when": "includes(symptoms_detected,['prurito','alopecia','costras','mal_olor_oido','sacude_cabeza'])",
+          "next": "bloque_dermato_otitis"
+        },
+        {
+          "when": "includes(symptoms_detected,['cojera','rigidez','dolor_articular','convulsiones','temblores'])",
+          "next": "bloque_musculo_neuro"
+        }
+      ],
+      "default_next": "bloque_metabolico"
+    },
+    {
+      "id": "bloque_digestivo",
+      "type": "questions",
+      "messages": ["Hablemos un poquito de su pancita 💚"],
+      "questions": [
+        {
+          "id": "q_vomitos",
+          "text": "¿Ha tenido vómitos? 🤢",
+          "type": "single_choice",
+          "options": ["sí", "no", "no estoy seguro/a"],
+          "map_to": "vomiting"
+        },
+        {
+          "id": "q_diarrea",
+          "text": "¿Tuvo diarrea? Si sí, ¿viste sangre? 💩",
+          "type": "single_choice",
+          "options": ["no", "diarrea sin sangre", "diarrea con sangre"],
+          "map_to": ["diarrhea","diarrhea_hemorrhagic"],
+          "map_values": {
+            "no": [0,0],
+            "diarrea sin sangre": [1,0],
+            "diarrea con sangre": [1,1]
+          }
+        },
+        {
+          "id": "q_dolor_abd",
+          "text": "¿Le molesta cuando le tocan la barriguita? 🤏",
+          "type": "single_choice",
+          "options": ["sí", "no"],
+          "map_to": "abdominal_pain"
+        },
+        {
+          "id": "q_apetito",
+          "text": "¿Ha comido menos de lo normal? 🍽️",
+          "type": "single_choice",
+          "options": ["sí", "no"],
+          "map_to": "loss_appetite"
+        },
+        {
+          "id": "q_deshidratacion",
+          "text": "¿Notas encías secas o que la piel tarda en volver a su sitio? 💧",
+          "type": "single_choice",
+          "options": ["sí", "no", "no estoy seguro/a"],
+          "map_to": "dehydration"
+        }
+      ],
+      "next": "bloque_metabolico"
+    },
+    {
+      "id": "bloque_respiratorio",
+      "type": "questions",
+      "messages": ["Voy a escuchar esa respiración imaginaria 👂💙"],
+      "questions": [
+        {
+          "id": "q_tos",
+          "text": "¿Tose a ratitos o seguido? 🫁",
+          "type": "single_choice",
+          "options": ["no", "tos leve", "tos frecuente"],
+          "map_to": "cough",
+          "map_values": {"no": 0, "tos leve": 1, "tos frecuente": 1}
+        },
+        {
+          "id": "q_estornudos",
+          "text": "¿Estornuda con moquitos? 🤧",
+          "type": "single_choice",
+          "options": ["sí", "no"],
+          "map_to": ["sneezing","nasal_discharge"],
+          "map_values": {"sí": [1,1], "no": [0,0]}
+        },
+        {
+          "id": "q_ojitos",
+          "text": "¿Tiene lagrimeo o legañitas (secreción ocular)? 👀",
+          "type": "single_choice",
+          "options": ["sí", "no"],
+          "map_to": "ocular_discharge"
+        },
+        {
+          "id": "q_disnea",
+          "text": "¿Le cuesta respirar o jadea más de lo normal? 😮‍💨",
+          "type": "single_choice",
+          "options": ["sí", "no"],
+          "map_to": "breathing_difficulty"
+        },
+        {
+          "id": "q_taquipnea",
+          "text": "¿Respira muy rápido incluso en reposo? ⏩",
+          "type": "single_choice",
+          "options": ["sí", "no", "no estoy seguro/a"],
+          "map_to": "tachypnea"
+        }
+      ],
+      "routing_rules": [
+        {
+          "when": "q_especie == 'gato' && (q_estornudos == 'sí' || q_ojitos == 'sí')",
+          "note": "Sospecha FVR/FCV; limitar diagnósticos caninos."
+        },
+        {
+          "when": "q_especie == 'perro' && q_tos != 'no' && (q_disnea == 'sí' || q_taquipnea == 'sí')",
+          "note": "Sospecha dirofilariosis o CIRDC/moquillo según fiebre."
+        }
+      ],
+      "next": "bloque_dermato_otitis"
+    },
+    {
+      "id": "bloque_dermato_otitis",
+      "type": "questions",
+      "messages": ["Miremos su piel y orejitas 🐾"],
+      "questions": [
+        {
+          "id": "q_prurito",
+          "text": "¿Se rasca mucho o se lame sin parar? 🐕‍🦺",
+          "type": "single_choice",
+          "options": ["sí", "no"],
+          "map_to": "itching"
+        },
+        {
+          "id": "q_alopecia",
+          "text": "¿Hay zonas sin pelito o con costritas? ✂️",
+          "type": "single_choice",
+          "options": ["sí", "no"],
+          "map_to": "alopecia"
+        },
+        {
+          "id": "q_otitis",
+          "text": "¿Sacude la cabeza o le huele raro la oreja? 👂",
+          "type": "single_choice",
+          "options": ["sí", "no"],
+          "map_to": ["ear_discharge","ear_odor","head_shaking"],
+          "map_values": { "sí": [1,1,1], "no": [0,0,0] }
+        },
+        {
+          "id": "q_estacional",
+          "text": "¿Empeora en cierta época del año (primavera/verano)? 🌼",
+          "type": "single_choice",
+          "options": ["sí", "no", "no estoy seguro/a"],
+          "map_to": "seasonality"
+        }
+      ],
+      "next": "bloque_musculo_neuro"
+    },
+    {
+      "id": "bloque_musculo_neuro",
+      "type": "questions",
+      "messages": ["Un par de cositas más y listo 💪"],
+      "questions": [
+        {
+          "id": "q_cojera",
+          "text": "¿Cojea o le cuesta levantarse después de descansar? 🦵",
+          "type": "single_choice",
+          "options": ["sí", "no"],
+          "map_to": ["limping","stiff_gait"],
+          "map_values": { "sí": [1,1], "no": [0,0] }
+        },
+        {
+          "id": "q_convulsiones",
+          "text": "¿Has visto temblores fuertes o convulsiones? ⚡",
+          "type": "single_choice",
+          "options": ["sí", "no"],
+          "map_to": ["seizures","convulsions"],
+          "map_values": { "sí": [1,1], "no": [0,0] }
+        }
+      ],
+      "next": "bloque_metabolico"
+    },
+    {
+      "id": "bloque_metabolico",
+      "type": "questions",
+      "messages": ["Últimas preguntitas suaves, lo prometo ✨"],
+      "questions": [
+        {
+          "id": "q_sed",
+          "text": "¿Bebe más agüita de lo normal? 🥤",
+          "type": "single_choice",
+          "options": ["sí", "no", "no estoy seguro/a"],
+          "map_to": "increased_thirst"
+        },
+        {
+          "id": "q_miccion",
+          "text": "¿Orina con más frecuencia o en lugares raros? 🚽",
+          "type": "single_choice",
+          "options": ["sí", "no", "no estoy seguro/a"],
+          "map_to": "increased_urination"
+        },
+        {
+          "id": "q_apetito_alto",
+          "text": "¿Come con muchas ganas pero baja de peso? 🍗➡️⚖️",
+          "type": "single_choice",
+          "options": ["sí", "no"],
+          "map_to": ["increased_appetite","weight_loss"],
+          "map_values": { "sí": [1,1], "no": [0,0] }
+        }
+      ],
+      "next": "cierre"
+    },
+    {
+      "id": "cierre",
+      "type": "messages",
+      "messages": [
+        "¡Gracias! Con esto ya puedo orientarte mejor 💡",
+        "Voy a analizar lo que me contaste y te doy opciones claras. Si noto algo urgente, te aviso altiro 🏥."
+      ],
+      "emit": "ready_for_scoring"
+    }
+  ],
+  "compatibilidad_especie_enfermedad": {
+    "perro": [
+      "Alergias cutáneas",
+      "Artritis",
+      "Diabetes mellitus (perro)",
+      "Dirofilariosis",
+      "Gastroenteritis aguda",
+      "Insuficiencia renal crónica (perro)",
+      "Moquillo (distemper)",
+      "Otitis externa",
+      "Parvovirosis",
+      "Sarna demodécica"
+    ],
+    "gato": [
+      "Asma felina",
+      "Complejo respiratorio felino (FVR/FCV)",
+      "Diabetes mellitus (gato)",
+      "Hipertiroidismo (gato)",
+      "Insuficiencia renal crónica (gato)",
+      "Panleucopenia felina"
+    ]
+  },
+  "mapeo_columnas_dataset": {
+    "fever": ["q_fiebre"],
+    "lethargy": ["q_decaimiento"],
+    "vomiting": ["q_vomitos"],
+    "diarrhea": ["q_diarrea"],
+    "diarrhea_hemorrhagic": ["q_diarrea"],
+    "abdominal_pain": ["q_dolor_abd"],
+    "loss_appetite": ["q_apetito"],
+    "dehydration": ["q_deshidratacion"],
+    "cough": ["q_tos"],
+    "sneezing": ["q_estornudos"],
+    "nasal_discharge": ["q_secrecion_nasal"],
+    "ocular_discharge": ["q_ojitos"],
+    "breathing_difficulty": ["q_disnea"],
+    "tachypnea": ["q_taquipnea"],
+    "itching": ["q_prurito"],
+    "alopecia": ["q_alopecia"],
+    "ear_discharge": ["q_otitis"],
+    "ear_odor": ["q_otitis"],
+    "head_shaking": ["q_otitis"],
+    "limping": ["q_cojera"],
+    "stiff_gait": ["q_cojera"],
+    "seizures": ["q_convulsiones"],
+    "convulsions": ["q_convulsiones"],
+    "increased_thirst": ["q_sed"],
+    "increased_urination": ["q_miccion"],
+    "increased_appetite": ["q_apetito_alto"],
+    "weight_loss": ["q_apetito_alto"]
+  },
+  "mensajes_empatia_y_transicion": [
+    "Gracias por la info, me ayuda muchísimo 💙",
+    "Solo dos preguntitas más y terminamos 🐾",
+    "Lo estás haciendo genial, ya casi listo ✨"
+  ],
+  "criterios_urgencia": [
+    {
+      "rule": "breathing_difficulty == 1 || seizures == 1 || (diarrhea_hemorrhagic == 1 && dehydration == 1)",
+      "action": "show_urgent_banner",
+      "message": "Esto puede ser urgente. Te recomiendo acudir a una clínica ahora mismo 🏥."
+    },
+    {
+      "rule": "fever == 1 && lethargy == 1 && (vomiting == 1 || diarrhea == 1) && duration_bucket == 'más de 1 semana'",
+      "action": "show_urgent_banner",
+      "message": "Por los días que lleva así, es importante que lo vea un veterinario pronto 🩺."
+    }
+  ]
+}

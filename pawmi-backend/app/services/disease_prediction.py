@@ -23,6 +23,7 @@ class DiseasePredictionService:
         self.encoders = None
         self.features_info = None
         self.model_loaded = False
+        self.model_features: List[str] | None = None
         
     def load_model(self) -> bool:
         """
@@ -32,9 +33,9 @@ class DiseasePredictionService:
             bool: True si carga exitosa, False si falla
         """
         try:
-            # Ruta al directorio de modelos (ajustar según estructura del proyecto)
-            base_dir = Path(__file__).resolve().parent.parent.parent.parent
-            models_dir = base_dir / "pawmi-ml" / "models"
+            # Ruta al directorio de modelos (en el backend)
+            base_dir = Path(__file__).resolve().parent.parent.parent
+            models_dir = base_dir / "models"
             
             model_path = models_dir / "disease_prediction_model.pkl"
             encoders_path = models_dir / "encoders.pkl"
@@ -64,6 +65,7 @@ class DiseasePredictionService:
             self.features_info = joblib.load(features_path)
             
             self.model_loaded = True
+            self.model_features = list(self.model.feature_names_in_) if hasattr(self.model, "feature_names_in_") else None
             logger.info("✅ Modelo de predicción de enfermedades cargado exitosamente")
             logger.info(f"   Features: {len(self.features_info['feature_names'])}")
             logger.info(f"   Test Accuracy: {self.features_info.get('test_accuracy', 'N/A')}")
@@ -85,6 +87,10 @@ class DiseasePredictionService:
         Returns:
             DataFrame procesado listo para predicción
         """
+        # 🔍 DEBUG: Log de síntomas recibidos
+        symptoms_received = {k: v for k, v in input_data.items() if isinstance(v, int) and v > 0}
+        logger.info(f"🩺 Síntomas recibidos del frontend: {symptoms_received}")
+        
         # Crear DataFrame con nombres de columnas estandarizados
         data = {
             'Animal_Type': input_data['animal_type'],
@@ -126,15 +132,11 @@ class DiseasePredictionService:
             'Soplo_cardiaco': input_data.get('soplo_cardiaco', 0),
             'Taquipnea': input_data.get('taquipnea', 0),
         }
-        
-        # Agregar nuevas features (Dataset 3.0) - SIEMPRE, con valores por defecto
         data['Fever_Objective'] = input_data.get('fever_objective', 0)
         data['Tachycardia'] = input_data.get('tachycardia', 0)
-        data['Disease_Cause'] = input_data.get('disease_cause', 'viral')
         data['Is_Chronic'] = input_data.get('is_chronic', 0)
         data['Is_Seasonal'] = input_data.get('is_seasonal', 0)
         data['Prevalence'] = input_data.get('prevalence', 0.5)
-        data['Prognosis'] = input_data.get('prognosis', 'good')
         data['Vaccination_Updated'] = input_data.get('vaccination_updated', 1)
         
         df = pd.DataFrame([data])
@@ -151,13 +153,13 @@ class DiseasePredictionService:
         le_size = self.encoders['size_encoder']
         le_life = self.encoders['life_encoder']
         
-        # Mapeo de valores comunes a valores del encoder
-        # Basado en los logs: size=['grande', 'mediano', 'pequeño'], life=['adulto', 'cachorro/gatito', 'maduro', 'senior']
+        # Mapeo de valores comunes a valores del encoder (Dataset 3.1)
+        # El modelo espera: Animal_Type=['Gato', 'Perro'], Size=['grande', 'mediano', 'pequeño'], Life_Stage=['adulto', 'cachorro/gatito', 'maduro', 'senior']
         animal_type_mapping = {
-            'dog': 'perro',
-            'cat': 'gato',
-            'perro': 'perro',
-            'gato': 'gato',
+            'dog': 'Perro',
+            'cat': 'Gato',
+            'perro': 'Perro',
+            'gato': 'Gato',
         }
         
         size_mapping = {
@@ -217,61 +219,45 @@ class DiseasePredictionService:
             logger.warning(f"Valor de life_stage desconocido: {life_value}. Clases disponibles: {le_life.classes_}. Usando primer valor.")
             df_encoded['Life_Stage'] = le_life.transform([le_life.classes_[0]])[0]
         
-        # Encoders opcionales (Dataset 3.0)
-        if 'cause_encoder' in self.encoders:
-            le_cause = self.encoders['cause_encoder']
-            cause_value = df['Disease_Cause'].iloc[0]
-            try:
-                df_encoded['Disease_Cause'] = le_cause.transform([cause_value])[0]
-            except ValueError:
-                logger.warning(f"Valor de disease_cause desconocido: {cause_value}. Clases: {le_cause.classes_}. Usando primer valor.")
-                df_encoded['Disease_Cause'] = le_cause.transform([le_cause.classes_[0]])[0]
-        else:
-            # Si no existe el encoder, eliminar la columna
-            logger.warning("Encoder de Disease_Cause no encontrado. Eliminando columna.")
-            if 'Disease_Cause' in df_encoded.columns:
-                df_encoded = df_encoded.drop(columns=['Disease_Cause'])
-        
-        if 'prognosis_encoder' in self.encoders:
-            le_prognosis = self.encoders['prognosis_encoder']
-            prognosis_value = df['Prognosis'].iloc[0]
-            try:
-                df_encoded['Prognosis'] = le_prognosis.transform([prognosis_value])[0]
-            except ValueError:
-                logger.warning(f"Valor de prognosis desconocido: {prognosis_value}. Clases: {le_prognosis.classes_}. Usando primer valor.")
-                df_encoded['Prognosis'] = le_prognosis.transform([le_prognosis.classes_[0]])[0]
-        else:
-            # Si no existe el encoder, eliminar la columna
-            logger.warning("Encoder de Prognosis no encontrado. Eliminando columna.")
-            if 'Prognosis' in df_encoded.columns:
-                df_encoded = df_encoded.drop(columns=['Prognosis'])
-        
-        # Normalizar features numéricas
+  
+        # Normalizar usando el scaler guardado durante el entrenamiento
         scaler = self.encoders['scaler']
+        scaler_features = list(scaler.feature_names_in_)
         
-        # Identificar columnas numéricas
-        numeric_cols = ['Age', 'Weight', 'BCS', 'Body_Temperature', 'Heart_Rate', 'Respiratory_Rate']
+        # Asegurar presencia de todas las columnas esperadas por el scaler
+        for feature in scaler_features:
+            if feature not in df_encoded.columns:
+                df_encoded[feature] = 0
         
-        # Agregar columnas de síntomas
-        symptom_cols = [col for col in df_encoded.columns 
-                       if col not in ['Animal_Type', 'Size', 'Life_Stage', 'Disease_Cause', 'Prognosis']]
+        # Transformar respetando el orden exacto usado en el fit
+        scaled_values = scaler.transform(df_encoded[scaler_features])[0]
+        scaled_map = {feature: value for feature, value in zip(scaler_features, scaled_values)}
         
-        all_numeric = numeric_cols + symptom_cols
+        # Determinar el orden final de features según el modelo entrenado
+        if self.model_features:
+            final_features = self.model_features
+        elif self.features_info and 'feature_names' in self.features_info:
+            final_features = self.features_info['feature_names']
+        else:
+            final_features = list(df_encoded.columns)
         
-        # Normalizar solo las columnas que existen
-        cols_to_scale = [col for col in all_numeric if col in df_encoded.columns]
-        df_encoded[cols_to_scale] = scaler.transform(df_encoded[cols_to_scale])
+        # Construir vector final asegurando orden y valores correctos
+        feature_vector = {}
+        for feature in final_features:
+            if feature in ['Animal_Type', 'Size', 'Life_Stage']:
+                feature_vector[feature] = float(df_encoded[feature].iloc[0])
+            elif feature in scaled_map:
+                feature_vector[feature] = float(scaled_map[feature])
+            else:
+                if feature in df_encoded.columns:
+                    feature_vector[feature] = float(df_encoded[feature].iloc[0])
+                else:
+                    feature_vector[feature] = 0.0
+                    logger.warning(f"Feature '{feature}' no encontrada en entrada. Se rellena con 0.")
         
-        # Asegurar que tenga todas las features esperadas por el modelo
-        if self.features_info and 'feature_names' in self.features_info:
-            for feature in self.features_info['feature_names']:
-                if feature not in df_encoded.columns:
-                    df_encoded[feature] = 0  # Rellenar con 0 features faltantes
-            
-            # Ordenar columnas según el modelo
-            df_encoded = df_encoded[self.features_info['feature_names']]
-        
-        return df_encoded
+        df_final = pd.DataFrame([feature_vector], columns=final_features)
+        logger.info(f"✅ Vector final preparado con {len(final_features)} features")
+        return df_final
     
     async def predict_disease(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -300,17 +286,29 @@ class DiseasePredictionService:
             if not self.model:
                 raise ValueError("Modelo no está cargado")
             
-            # Obtener probabilidades de todas las clases
+            # Hacer predicción numérica
+            prediction_numeric = self.model.predict(X)[0]
             probabilities = self.model.predict_proba(X)[0]
             
-            # Obtener clases
-            classes = self.model.classes_
+            # Convertir predicción numérica a nombre de enfermedad usando disease_encoder
+            if self.encoders and 'disease_encoder' in self.encoders:
+                disease_encoder = self.encoders['disease_encoder']
+                classes = disease_encoder.classes_
+                logger.info(f"✅ Usando disease_encoder para convertir clases: {len(classes)} enfermedades")
+            else:
+                # Fallback a clases del modelo (por compatibilidad)
+                classes = self.model.classes_
+                logger.warning("⚠️ disease_encoder no encontrado, usando model.classes_")
             
             # Crear lista de predicciones con probabilidades
             predictions_list = [
-                {"disease": disease, "probability": float(prob)}
+                {"disease": str(disease), "probability": float(prob)}
                 for disease, prob in zip(classes, probabilities)
             ]
+            
+            # Log de predicciones
+            top_predictions_log = [(p['disease'], f"{p['probability']:.3f}") for p in sorted(predictions_list, key=lambda x: x['probability'], reverse=True)[:3]]
+            logger.info(f"📊 Predicciones: {top_predictions_log}")
             
             # Ordenar por probabilidad descendente
             predictions_list.sort(key=lambda x: x['probability'], reverse=True)
@@ -340,13 +338,12 @@ class DiseasePredictionService:
                 "success": True,
                 "message": message,
                 "predictions": top_3,
-                "model_version": "3.0",
+                "model_version": "4.0-realistic",
                 "model_info": {
                     "accuracy": self.features_info.get('test_accuracy', 'N/A') if self.features_info else 'N/A',
-                    "cv_mean": self.features_info.get('cv_mean', 'N/A') if self.features_info else 'N/A',
                     "total_classes": len(classes),
                     "features_used": len(self.features_info.get('feature_names', [])) if self.features_info else 0,
-                    "model_type": str(type(self.model).__name__)
+                    "model_type": self.features_info.get('model_type', str(type(self.model).__name__)) if self.features_info else str(type(self.model).__name__)
                 },
                 "warning": "⚠️ Esta es una predicción automatizada basada en síntomas. Consulte con un veterinario profesional para diagnóstico definitivo y tratamiento."
             }

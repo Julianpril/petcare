@@ -65,20 +65,30 @@ class OllamaService:
         
         keyword_map = {
             'vomitos': ['vomit', 'vómito', 'devuelv', 'arcada'],
-            'diarrea': ['diarrea', 'heces blandas', 'caca líquida'],
-            'fiebre': ['fiebre', 'caliente', 'temperatura'],
-            'letargo': ['letargo', 'decaído', 'sin energía', 'cansad', 'débil', 'apátic'],
+            'diarrea': ['diarrea', 'heces blandas', 'caca líquida', 'deposiciones'],
+            'diarrea_hemorragica': ['sangre', 'hemorrágica', 'hemorragica', 'con sangre', 'sanguinolent'],
+            'fiebre': ['fiebre', 'caliente', 'temperatura alta', 'calentura'],
+            'letargo': ['letargo', 'decaído', 'sin energía', 'cansad', 'débil', 'apátic', 'no quiere comer'],
+            'deshidratacion': ['deshidrat', 'seco', 'sin agua'],
             'tos': ['tos', 'toser', 'tose'],
-            'dolor_articular': ['dolor', 'le duele', 'dolor en el cuerpo'],
-            'prurito': ['picazón', 'rascarse', 'rasca'],
+            'disnea': ['dificultad respirar', 'respira mal', 'le cuesta respirar'],
+            'cojera': ['cojea', 'cojera', 'renguea', 'no apoya'],
+            'rigidez': ['rígido', 'rigidez', 'tieso', 'duro'],
+            'dolor_articular': ['dolor articu', 'dolor en las patas', 'dolor en las piernas', 'artritis'],
+            'dolor_abdominal': ['dolor abdominal', 'le duele la panza', 'dolor de estómago'],
+            'prurito': ['picazón', 'rascarse', 'rasca', 'comezón'],
+            'alopecia': ['pérdida de pelo', 'se le cae el pelo', 'calvo', 'sin pelo'],
             'estornudos': ['estornud', 'resfri'],
-            'secrecion_nasal': ['mocos', 'nariz'],
+            'secrecion_nasal': ['mocos', 'nariz', 'secreción nasal'],
+            'secrecion_ocular': ['legañ', 'ojos llorosos', 'secreción ocular'],
+            'convulsiones': ['convulsion', 'temblor', 'espasmo', 'ataque'],
         }
         
         for symptom, keywords in keyword_map.items():
             if any(kw in text_lower for kw in keywords):
                 symptoms[symptom] = 1
         
+        logger.info(f"🔍 Síntomas detectados por keywords: {symptoms}")
         return symptoms
     
     def _extract_with_ollama(self, user_message: str) -> Dict[str, int]:

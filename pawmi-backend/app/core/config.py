@@ -1,8 +1,11 @@
+import logging
 from functools import lru_cache
 from typing import Any, List
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+logger = logging.getLogger(__name__)
 
 
 class Settings(BaseSettings):
@@ -18,7 +21,20 @@ class Settings(BaseSettings):
     debug: bool = Field(default=True, alias="DEBUG")
     environment: str = Field(default="development", alias="ENVIRONMENT")
 
+    # Database URL will be determined by connection_manager
     database_url: str = Field(default="", alias="DATABASE_URL")
+    
+    def get_active_database_url(self) -> str:
+        """Get database URL with automatic fallback."""
+        try:
+            from app.db.connection_manager import get_database_url
+            url, db_type = get_database_url()
+            logger.info(f"Using {db_type} database")
+            return url
+        except Exception as e:
+            logger.error(f"Error determining database: {e}")
+            # Fallback to .env if connection manager fails
+            return self.database_url or "postgresql://postgres:2502@localhost:5432/pawMi_db"
 
     secret_key: str = Field(default="", alias="SECRET_KEY")
     algorithm: str = Field(default="HS256", alias="ALGORITHM")

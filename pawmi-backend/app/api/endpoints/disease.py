@@ -212,14 +212,13 @@ async def test_prediction():
             "jaundice": False,
             "pale_gums": False,
             "swelling": False,
-            "disease_cause": "viral",
-            "prognosis": "good",
             "fever_objective": 1.0,
             "tachycardia": 1.0,
             "is_chronic": 0.0,
             "is_seasonal": 0.0,
             "prevalence": 0.5,
             "vaccination_updated": 1.0
+            # NOTA: disease_cause y prognosis son OUTPUTS del modelo, no inputs
         }
         
         # Realizar predicción
@@ -354,7 +353,14 @@ async def predict_with_ollama(request: PredictWithOllamaRequest):
         
         # 2. Actualizar datos del pet con síntomas detectados
         pet_dict = request.pet_data.model_dump()
+        
+        # 🔍 DEBUG: Mostrar datos de la mascota ANTES de agregar síntomas
+        logger.info(f"📋 DATOS DE LA MASCOTA: animal_type={pet_dict.get('animal_type')}, size={pet_dict.get('size')}, age={pet_dict.get('age')}, life_stage={pet_dict.get('life_stage')}, weight={pet_dict.get('weight')}")
+        
         pet_dict.update(symptoms)
+        
+        # 🔍 DEBUG: Mostrar vector completo que va al modelo
+        logger.info(f"🎯 VECTOR COMPLETO AL MODELO: {pet_dict}")
         
         # 3. Predecir con el modelo ML
         logger.info("Realizando predicción con modelo ML")

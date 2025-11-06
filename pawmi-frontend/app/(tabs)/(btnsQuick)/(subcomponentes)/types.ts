@@ -19,7 +19,9 @@ export interface Pet {
   species?: string;
   breed?: string;
   age: number | string;
+  age_years?: number;  // Edad numérica exacta de la DB
   weight?: number | string;
+  weight_kg?: number;  // Peso numérico exacto de la DB
   size?: string;
   image_url?: string;
 }

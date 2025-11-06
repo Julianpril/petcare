@@ -114,6 +114,52 @@ export interface PredictWithOllamaResponse {
   };
 }
 
+// === INTERFACES PARA PREDIAGNOSIS CONVERSACIONAL ===
+
+export interface PrediagnosisResult {
+  predictions: Array<{
+    disease: string;
+    probability: number;
+    confidence: string;
+  }>;
+  model_accuracy: number;
+  disclaimer: string;
+  detected_symptoms: string[];
+  urgency_alert?: string;
+  recommendation: string;
+}
+
+export interface FlowStep {
+  step_id: string;
+  step_type: string;
+  messages?: string[];
+  questions?: Array<{
+    id: string;
+    text: string;
+    emoji?: string;
+    type: string;
+    options?: string[];
+    skip_option?: string;
+  }>;
+}
+
+export interface PrediagnosisFlow {
+  version: string;
+  locale: string;
+  tone: string;
+  flow: FlowStep[];
+  compatibilidad_especie_enfermedad: {
+    perro: string[];
+    gato: string[];
+  };
+  mapeo_columnas_dataset: { [key: string]: string[] };
+  criterios_urgencia: Array<{
+    rule: string;
+    message: string;
+  }>;
+  mensajes_empatia_y_transicion: { [key: string]: string };
+}
+
 export const diseaseApi = {
   /**
    * Predice la enfermedad basada en síntomas
@@ -224,6 +270,58 @@ export const diseaseApi = {
       console.error('Error en predicción con Ollama:', error);
       throw new Error(
         error.detail || 'Error al predecir con Ollama'
+      );
+    }
+  },
+
+  /**
+   * NUEVO: Sistema de prediagnosis conversacional
+   * Usa flujo JSON estructurado con preguntas dinámicas
+   */
+  async predictWithPrediagnosis(answers: Record<string, any>): Promise<PrediagnosisResult> {
+    try {
+      const response = await apiClient.post<PrediagnosisResult>(
+        '/api/prediagnosis/process',
+        { answers }
+      );
+      return response;
+    } catch (error: any) {
+      console.error('Error en prediagnosis:', error);
+      throw new Error(
+        error.detail || 'Error al procesar prediagnosis'
+      );
+    }
+  },
+
+  /**
+   * Obtiene el flujo completo de prediagnosis
+   */
+  async getPrediagnosisFlow(): Promise<PrediagnosisFlow> {
+    try {
+      const response = await apiClient.get<PrediagnosisFlow>('/api/prediagnosis/flow');
+      return response;
+    } catch (error: any) {
+      console.error('Error obteniendo flujo:', error);
+      throw new Error(
+        error.detail || 'Error al obtener flujo de prediagnosis'
+      );
+    }
+  },
+
+  /**
+   * Obtiene el siguiente paso del flujo
+   */
+  async getNextStep(currentStepId: string, answers: Record<string, any>): Promise<FlowStep> {
+    try {
+      const response = await apiClient.post<FlowStep>(
+        '/api/prediagnosis/next-step',
+        { current_step_id: currentStepId, answers }
+      );
+      return response;
+    } catch (error: any) {
+      console.error('Error obteniendo siguiente paso:', error);
+      throw new Error(
+        error.detail || 'Error al obtener siguiente paso'
       );
     }
   },

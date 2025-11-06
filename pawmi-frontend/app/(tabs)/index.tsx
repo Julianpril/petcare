@@ -6,6 +6,7 @@ import React, { useCallback, useState } from 'react';
 import { Alert, Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import EditPetModal from '../../components/EditPetModal';
 import HamsterLoader from '../../components/loader';
+import PetDetailModal from '../../components/PetDetailModal';
 import ToastNotification from '../../components/ToastNotification';
 import ExpandableFAB from '../../components/ui/btnExpandible';
 import UserMenuDropdown from '../../components/UserMenuDropdown';
@@ -23,6 +24,10 @@ type Pet = {
   age: string;
   weight: string;
   traits: string[];
+  animal_type?: string;
+  sex?: string;
+  medical_history?: string;
+  notes?: string;
 };
 
 type ReminderItem = {
@@ -50,6 +55,7 @@ export default function HomeScreen() {
   const [error, setError] = useState<string | null>(null);
   const [reminders, setReminders] = useState<ReminderItem[]>([]);
   const [editModalVisible, setEditModalVisible] = useState(false);
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedPet, setSelectedPet] = useState<Pet | null>(null);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'success' as 'success' | 'error' | 'warning' | 'info' });
   const [userMenuVisible, setUserMenuVisible] = useState(false);
@@ -92,6 +98,10 @@ export default function HomeScreen() {
     age: record.age ?? (record.age_years ? `${record.age_years} años` : 'Sin edad'),
     weight: record.weight ?? (record.weight_kg ? `${record.weight_kg} kg` : 'Sin peso'),
     traits: record.traits ?? [],
+    animal_type: record.animal_type,
+    sex: record.sex,
+    medical_history: record.medical_history,
+    notes: record.notes,
   });
 
   const formatReminderDate = (date: string, time?: string | null) => {
@@ -457,7 +467,10 @@ export default function HomeScreen() {
                 age={pet.age}
                 weight={pet.weight}
                 traits={pet.traits}
-                onPress={() => console.log(`Pet selected: ${pet.name}`)}
+                onPress={() => {
+                  setSelectedPet(pet);
+                  setDetailModalVisible(true);
+                }}
                 onEdit={() => handleEditPet(pet)}
                 onDelete={() => handleDeletePet(pet)}
               />
@@ -467,6 +480,19 @@ export default function HomeScreen() {
       </ScrollView>
 
       <ExpandableFAB options={fabOptions} radius={90} />
+
+      <PetDetailModal
+        visible={detailModalVisible}
+        pet={selectedPet}
+        onClose={() => {
+          setDetailModalVisible(false);
+          setSelectedPet(null);
+        }}
+        onEdit={() => {
+          setDetailModalVisible(false);
+          setEditModalVisible(true);
+        }}
+      />
 
       <EditPetModal
         visible={editModalVisible}
