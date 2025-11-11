@@ -26,11 +26,15 @@ export type User = {
   full_name?: string;
   phone?: string;
   profile_image_url?: string;
-  role: 'user' | 'admin' | 'veterinarian';
+  role: 'user' | 'admin' | 'shelter';
   is_active: boolean;
   created_at: string;
   updated_at: string;
   last_login?: string;
+  shelter_name?: string;
+  shelter_description?: string;
+  shelter_license?: string;
+  is_verified_shelter?: boolean;
 };
 
 export type Pet = {

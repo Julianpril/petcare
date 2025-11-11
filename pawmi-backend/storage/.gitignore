@@ -1,0 +1,5 @@
+# Ignorar todas las imágenes subidas localmente
+*
+!.gitignore
+
+# Las carpetas se crean automáticamente al iniciar el servidor

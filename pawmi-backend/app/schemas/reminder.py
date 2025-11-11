@@ -21,7 +21,7 @@ class ReminderBase(BaseModel):
 
 class ReminderCreate(ReminderBase):
     pet_id: UUID
-    user_id: UUID
+    user_id: Optional[UUID] = None  # Se asigna en el endpoint
 
 
 class ReminderUpdate(BaseModel):

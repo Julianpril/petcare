@@ -16,7 +16,14 @@ const AppointmentsList: React.FC<AppointmentsListProps> = ({
   const selectedAppointments = selectedDate ? getAppointmentsForDate(selectedDate) : [];
 
   const allAppointmentsSorted = useMemo(() => {
-    return [...appointments].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    return [...appointments].sort((a, b) => {
+      // Parsear fechas como locales, no UTC
+      const [yearA, monthA, dayA] = a.date.split('-').map(Number);
+      const [yearB, monthB, dayB] = b.date.split('-').map(Number);
+      const dateA = new Date(yearA, monthA - 1, dayA);
+      const dateB = new Date(yearB, monthB - 1, dayB);
+      return dateA.getTime() - dateB.getTime();
+    });
   }, [appointments]);
 
   return (
@@ -29,7 +36,11 @@ const AppointmentsList: React.FC<AppointmentsListProps> = ({
         />
         <Text style={styles.sectionTitle}>
           {selectedDate
-            ? `Eventos del ${new Date(selectedDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}`
+            ? (() => {
+                const [year, month, day] = selectedDate.split('-').map(Number);
+                const dateObj = new Date(year, month - 1, day);
+                return `Eventos del ${dateObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}`;
+              })()
             : 'Próximos eventos'
           }
         </Text>

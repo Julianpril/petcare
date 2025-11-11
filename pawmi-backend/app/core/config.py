@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     algorithm: str = Field(default="HS256", alias="ALGORITHM")
     access_token_expire_minutes: int = Field(default=30, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
 
+    # Gemini AI
+    gemini_api_key: str = Field(default="", alias="GEMINI_API_KEY")
+
     cors_origins: List[str] = Field(default_factory=list, alias="CORS_ORIGINS")
 
     @field_validator('cors_origins', mode='before')

@@ -12,8 +12,13 @@ class UserBase(BaseModel):
     phone: Optional[str] = Field(default=None, max_length=20)
     address: Optional[str] = None
     profile_image_url: Optional[str] = None
-    role: str = Field(default="user", max_length=50)
+    role: str = Field(default="user", max_length=50)  # 'user', 'admin', 'shelter'
     is_active: bool = True
+    
+    # Campos para refugios
+    shelter_name: Optional[str] = Field(default=None, max_length=255)
+    shelter_description: Optional[str] = None
+    shelter_license: Optional[str] = Field(default=None, max_length=100)
 
 
 class UserCreate(UserBase):
@@ -28,10 +33,16 @@ class UserUpdate(BaseModel):
     profile_image_url: Optional[str] = None
     role: Optional[str] = Field(default=None, max_length=50)
     is_active: Optional[bool] = None
+    
+    # Campos para refugios
+    shelter_name: Optional[str] = Field(default=None, max_length=255)
+    shelter_description: Optional[str] = None
+    shelter_license: Optional[str] = Field(default=None, max_length=100)
 
 
 class UserRead(UserBase):
     id: UUID
+    is_verified_shelter: bool = False
     created_at: datetime
     updated_at: datetime
     last_login: Optional[datetime] = None
@@ -44,12 +55,17 @@ class UserPublic(BaseModel):
     username: str
     full_name: Optional[str] = None
     profile_image_url: Optional[str] = None
+    role: str
+    
+    # Info pública del refugio
+    shelter_name: Optional[str] = None
+    is_verified_shelter: bool = False
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class UserLoginRequest(BaseModel):
-    email: EmailStr
+    email: str  # Puede ser email o username
     password: str
 
 

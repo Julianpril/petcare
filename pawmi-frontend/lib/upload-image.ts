@@ -1,5 +1,7 @@
 import { decode } from 'base64-arraybuffer';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
+import { Platform } from 'react-native';
+import { apiClient } from './api-client';
 import { supabase } from './supabase';
 
 export interface UploadImageResult {
@@ -8,7 +10,7 @@ export interface UploadImageResult {
 }
 
 /**
- * Sube una imagen a Supabase Storage
+ * Sube una imagen a Supabase Storage o al backend como fallback
  * @param uri - URI local de la imagen (file:// o content://)
  * @param bucket - Nombre del bucket en Supabase (default: 'pet-images')
  * @param folder - Carpeta dentro del bucket (default: 'pets')
@@ -20,48 +22,99 @@ export async function uploadImageToSupabase(
   folder: string = 'pets'
 ): Promise<UploadImageResult> {
   try {
-    // Generar nombre único para el archivo
-    const fileExt = uri.split('.').pop()?.toLowerCase() || 'jpg';
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-    const filePath = `${folder}/${fileName}`;
+    console.log('=== Iniciando subida de imagen ===');
+    console.log('URI:', uri);
+    console.log('Bucket:', bucket);
+    console.log('Folder:', folder);
 
-    // Leer el archivo como base64
-    const base64 = await FileSystem.readAsStringAsync(uri, {
-      encoding: 'base64',
-    });
-
-    // Convertir base64 a ArrayBuffer
-    const arrayBuffer = decode(base64);
-
-    // Determinar el content type
-    const contentType = getContentType(fileExt);
-
-    // Subir a Supabase Storage
-    const { data, error } = await supabase.storage
-      .from(bucket)
-      .upload(filePath, arrayBuffer, {
-        contentType,
-        upsert: false,
-      });
-
-    if (error) {
-      console.error('Error uploading to Supabase:', error);
-      throw new Error(`Error al subir imagen: ${error.message}`);
+    // Check if running on web
+    if (Platform.OS === 'web') {
+      throw new Error('La subida de imágenes no está disponible en la versión web. Por favor usa la app móvil.');
     }
 
-    // Obtener URL pública
-    const { data: publicUrlData } = supabase.storage
-      .from(bucket)
-      .getPublicUrl(filePath);
-
-    return {
-      publicUrl: publicUrlData.publicUrl,
-      path: filePath,
-    };
+    // Intentar primero subir a través del backend (más confiable)
+    try {
+      console.log('📤 Intentando subir vía backend API...');
+      const result = await apiClient.uploadImage(uri, folder);
+      console.log('✅ Imagen subida exitosamente vía backend:', result.publicUrl);
+      return result;
+    } catch (backendError) {
+      console.warn('⚠️ Error al subir vía backend, intentando con Supabase directo:', backendError);
+      
+      // Fallback a Supabase directo
+      return await uploadDirectlyToSupabase(uri, bucket, folder);
+    }
   } catch (error) {
-    console.error('Error in uploadImageToSupabase:', error);
-    throw error;
+    console.error('❌ Error in uploadImageToSupabase:', error);
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('Error desconocido al subir la imagen');
   }
+}
+
+/**
+ * Sube directamente a Supabase Storage (fallback)
+ */
+async function uploadDirectlyToSupabase(
+  uri: string,
+  bucket: string,
+  folder: string
+): Promise<UploadImageResult> {
+  console.log('📤 Subiendo directamente a Supabase Storage...');
+  
+  // Generar nombre único para el archivo
+  const fileExt = uri.split('.').pop()?.toLowerCase() || 'jpg';
+  const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+  const filePath = `${folder}/${fileName}`;
+
+  console.log('File path:', filePath);
+  console.log('File extension:', fileExt);
+
+  // Leer el archivo como base64
+  console.log('Leyendo archivo...');
+  const base64 = await FileSystem.readAsStringAsync(uri, {
+    encoding: 'base64',
+  });
+  console.log('Archivo leído, tamaño:', base64.length, 'caracteres');
+
+  // Convertir base64 a ArrayBuffer
+  console.log('Convirtiendo a ArrayBuffer...');
+  const arrayBuffer = decode(base64);
+  console.log('ArrayBuffer creado, tamaño:', arrayBuffer.byteLength, 'bytes');
+
+  // Determinar el content type
+  const contentType = getContentType(fileExt);
+  console.log('Content type:', contentType);
+
+  // Subir a Supabase Storage
+  console.log('Subiendo a Supabase Storage...');
+  const { data, error } = await supabase.storage
+    .from(bucket)
+    .upload(filePath, arrayBuffer, {
+      contentType,
+      upsert: false,
+    });
+
+  if (error) {
+    console.error('❌ Error uploading to Supabase:', error);
+    throw new Error(`Error al subir imagen: ${error.message}`);
+  }
+
+  console.log('✅ Imagen subida exitosamente:', data);
+
+  // Obtener URL pública
+  console.log('Obteniendo URL pública...');
+  const { data: publicUrlData } = supabase.storage
+    .from(bucket)
+    .getPublicUrl(filePath);
+
+  console.log('URL pública obtenida:', publicUrlData.publicUrl);
+
+  return {
+    publicUrl: publicUrlData.publicUrl,
+    path: filePath,
+  };
 }
 
 /**

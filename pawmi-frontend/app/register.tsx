@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import HamsterLoader from '../components/loader';
+import { useResponsive } from '../hooks/useResponsive';
 import { apiClient } from '../lib/api-client';
 import { useAuth } from '../lib/auth-context';
 
@@ -16,16 +17,81 @@ interface InputConfig {
   optional?: boolean;
 }
 
+type UserRole = 'user' | 'walker' | 'shelter';
+
+interface RoleOption {
+  value: UserRole;
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  description: string;
+  color: string;
+}
+
 const initialFormData = { username: '', email: '', password: '', confirmPassword: '', fullName: '', phone: '' };
 
 export default function RegisterScreen() {
   const router = useRouter();
   const { login } = useAuth();
+  const responsive = useResponsive();
   const [formData, setFormData] = useState<typeof initialFormData>(initialFormData);
+  const [selectedRole, setSelectedRole] = useState<UserRole>('user');
   const [errors, setErrors] = useState<Partial<Record<keyof typeof initialFormData, string>> & { error?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const dynamicStyles = StyleSheet.create({
+    scrollContent: {
+      paddingHorizontal: responsive.spacing.lg,
+      paddingVertical: responsive.spacing.xl * 2,
+    },
+    title: {
+      fontSize: responsive.fontSize.xl + 6,
+      fontWeight: 'bold',
+      color: '#EAEAEA',
+      marginBottom: responsive.spacing.xs,
+      textAlign: 'center',
+    },
+    subtitle: {
+      fontSize: responsive.fontSize.md,
+      color: '#AAB4C0',
+      marginBottom: responsive.spacing.xl,
+      textAlign: 'center',
+    },
+    inputContainer: {
+      marginBottom: responsive.spacing.md,
+    },
+    sectionTitle: {
+      fontSize: responsive.fontSize.md,
+      fontWeight: '600',
+      color: '#EAEAEA',
+      marginBottom: responsive.spacing.md,
+    },
+  });
+
+  const roleOptions: RoleOption[] = [
+    {
+      value: 'user',
+      label: 'Usuario',
+      icon: 'person',
+      description: 'Dueño de mascota',
+      color: '#667eea'
+    },
+    {
+      value: 'walker',
+      label: 'Paseador',
+      icon: 'walk',
+      description: 'Ofrecer servicios',
+      color: '#10b981'
+    },
+    {
+      value: 'shelter',
+      label: 'Refugio',
+      icon: 'home',
+      description: 'Organización',
+      color: '#f59e0b'
+    }
+  ];
 
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
@@ -54,13 +120,14 @@ export default function RegisterScreen() {
       const fullName = formData.fullName.trim();
       const phone = formData.phone.trim();
 
-      // Register via backend API
+      // Register via backend API with role
       await apiClient.register({
         email,
         username,
         password,
         full_name: fullName || undefined,
         phone: phone || undefined,
+        role: selectedRole,
       });
 
       // After successful registration, login
@@ -73,7 +140,17 @@ export default function RegisterScreen() {
       router.replace('/login');
     } catch (error: any) {
       console.error('Error:', error);
-      setErrors({ error: 'Error al registrar. Inténtalo de nuevo.' });
+      
+      // Manejar errores específicos del backend
+      let errorMessage = 'Error al registrar. Inténtalo de nuevo.';
+      
+      if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setErrors({ error: errorMessage });
     } finally {
       setIsLoading(false);
     }
@@ -108,10 +185,19 @@ export default function RegisterScreen() {
   ];
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.form}>
-        <Text style={styles.title}>Crear Cuenta</Text>
-        <Text style={styles.subtitle}>Regístrate para comenzar</Text>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={styles.keyboardView}
+    >
+      <ScrollView 
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        style={styles.scrollViewStyle}
+      >
+        <View style={styles.form}>
+        <Text style={dynamicStyles.title}>Crear Cuenta</Text>
+        <Text style={dynamicStyles.subtitle}>Regístrate para comenzar</Text>
         
         {errors.error && (
           <View style={styles.errorContainer}>
@@ -137,9 +223,51 @@ export default function RegisterScreen() {
           <View style={styles.divider} />
         </View>
 
+        {/* Role Selection */}
+        <View style={styles.roleSelectionContainer}>
+          <Text style={dynamicStyles.sectionTitle}>¿Qué tipo de cuenta deseas?</Text>
+          <View style={styles.roleOptionsContainer}>
+            {roleOptions.map((role) => (
+              <TouchableOpacity
+                key={role.value}
+                style={[
+                  styles.roleOption,
+                  selectedRole === role.value && styles.roleOptionSelected,
+                  selectedRole === role.value && { borderColor: role.color }
+                ]}
+                onPress={() => setSelectedRole(role.value)}
+                disabled={isLoading}
+              >
+                <View style={[
+                  styles.roleIconContainer,
+                  selectedRole === role.value && { backgroundColor: role.color }
+                ]}>
+                  <Ionicons 
+                    name={role.icon} 
+                    size={24} 
+                    color={selectedRole === role.value ? '#fff' : '#AAB4C0'} 
+                  />
+                </View>
+                <Text style={[
+                  styles.roleLabel,
+                  selectedRole === role.value && styles.roleLabelSelected
+                ]}>
+                  {role.label}
+                </Text>
+                <Text style={styles.roleDescription}>{role.description}</Text>
+                {selectedRole === role.value && (
+                  <View style={[styles.roleCheckmark, { backgroundColor: role.color }]}>
+                    <Ionicons name="checkmark" size={16} color="#fff" />
+                  </View>
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
         {/* Form Inputs */}
         {inputs.map(({ field, placeholder, icon, autoCapitalize, keyboardType, secure }) => (
-          <View key={field} style={styles.inputContainer}>
+          <View key={field} style={dynamicStyles.inputContainer}>
             <View style={[styles.inputWrapper, errors[field] && styles.inputWrapperError]}>
               <Ionicons name={icon} size={20} color="#AAB4C0" style={styles.inputIcon} />
               <TextInput
@@ -152,6 +280,8 @@ export default function RegisterScreen() {
                 autoCorrect={false}
                 keyboardType={keyboardType}
                 secureTextEntry={secure && (field === 'password' ? !showPassword : !showConfirmPassword)}
+                returnKeyType={field === 'confirmPassword' ? 'done' : 'next'}
+                blurOnSubmit={field === 'confirmPassword'}
               />
               {secure && (
                 <TouchableOpacity
@@ -204,18 +334,28 @@ export default function RegisterScreen() {
           <HamsterLoader size={200} duration={1200} />
         </View>
       )}
-    </ScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardView: {
+    flex: 1,
+    backgroundColor: '#0F1419',
+  },
+  scrollViewStyle: {
+    flex: 1,
+    backgroundColor: '#0F1419',
+  },
   container: { 
     flexGrow: 1, 
     backgroundColor: '#0F1419', 
     justifyContent: 'center', 
     alignItems: 'center', 
     padding: 20, 
-    paddingTop: 50 
+    paddingTop: 50,
+    paddingBottom: 40,
   },
   form: { 
     width: '100%', 
@@ -362,6 +502,68 @@ const styles = StyleSheet.create({
   fieldError: { 
     color: '#ff6f61', 
     fontSize: 12
+  },
+  // Role Selection Styles
+  roleSelectionContainer: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    marginBottom: 12,
+  },
+  roleOptionsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  roleOption: {
+    flex: 1,
+    backgroundColor: '#232931',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#2A3340',
+    padding: 16,
+    alignItems: 'center',
+    position: 'relative',
+  },
+  roleOptionSelected: {
+    borderWidth: 2,
+    backgroundColor: '#1A1F26',
+  },
+  roleIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#2A3340',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  roleLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#AAB4C0',
+    marginBottom: 4,
+  },
+  roleLabelSelected: {
+    color: '#FFFFFF',
+  },
+  roleDescription: {
+    fontSize: 11,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  roleCheckmark: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   loaderOverlay: {
     ...StyleSheet.absoluteFillObject,

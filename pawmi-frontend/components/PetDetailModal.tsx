@@ -4,8 +4,9 @@
 
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import React from 'react';
+import React, { useState } from 'react';
 import {
+    Alert,
     Dimensions,
     Image,
     Modal,
@@ -15,6 +16,8 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
+import { apiClient } from '../lib/api-client';
+import ExerciseRoutineModal from './ExerciseRoutineModal';
 
 type Pet = {
   id: string;
@@ -40,7 +43,32 @@ type PetDetailModalProps = {
 const { width } = Dimensions.get('window');
 
 export default function PetDetailModal({ visible, pet, onClose, onEdit }: PetDetailModalProps) {
+  const sheetHeight = Math.min(Dimensions.get('screen').height * 0.96, 820);
+  const [routineModalVisible, setRoutineModalVisible] = useState(false);
+  const [routine, setRoutine] = useState<string | null>(null);
+  const [loadingRoutine, setLoadingRoutine] = useState(false);
+
   if (!pet) return null;
+
+  const handleGenerateRoutine = async () => {
+    try {
+      setLoadingRoutine(true);
+      setRoutine(null);
+      setRoutineModalVisible(true);
+
+      const response = await apiClient.generateExerciseRoutine(pet.id);
+      setRoutine(response.routine);
+    } catch (error: any) {
+      console.error('Error generando rutina:', error);
+      setRoutineModalVisible(false);
+      Alert.alert(
+        'Error',
+        error.response?.data?.detail || 'No se pudo generar la rutina. Verifica que el backend tenga configurada la API key de Gemini.'
+      );
+    } finally {
+      setLoadingRoutine(false);
+    }
+  };
 
   const gradientColors: [string, string][] = [
     ['#667eea', '#764ba2'],
@@ -60,7 +88,7 @@ export default function PetDetailModal({ visible, pet, onClose, onEdit }: PetDet
       onRequestClose={onClose}
     >
       <View style={styles.modalOverlay}>
-        <View style={styles.modalContainer}>
+        <View style={[styles.modalContainer, { height: sheetHeight }]}>
           {/* Header con imagen */}
           <View style={styles.header}>
             <LinearGradient
@@ -95,8 +123,8 @@ export default function PetDetailModal({ visible, pet, onClose, onEdit }: PetDet
           </View>
 
           {/* Content */}
-          <ScrollView 
-            style={styles.content} 
+          <ScrollView
+            style={styles.content}
             contentContainerStyle={styles.contentContainer}
             showsVerticalScrollIndicator={false}
           >
@@ -203,6 +231,24 @@ export default function PetDetailModal({ visible, pet, onClose, onEdit }: PetDet
               </View>
             )}
 
+            {/* Botón de generar rutina de ejercicio */}
+            <TouchableOpacity 
+              style={styles.aiButton} 
+              onPress={handleGenerateRoutine}
+              activeOpacity={0.9}
+            >
+              <LinearGradient
+                colors={['#43e97b', '#38f9d7']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.aiButtonGradient}
+              >
+                <Ionicons name="barbell" size={22} color="#fff" />
+                <Text style={styles.aiButtonText}>Generar rutina de ejercicio con IA</Text>
+                <Ionicons name="sparkles" size={18} color="#fff" />
+              </LinearGradient>
+            </TouchableOpacity>
+
             {/* Botón de editar */}
             {onEdit && (
               <TouchableOpacity 
@@ -227,6 +273,15 @@ export default function PetDetailModal({ visible, pet, onClose, onEdit }: PetDet
           </ScrollView>
         </View>
       </View>
+
+      {/* Modal de rutina de ejercicio */}
+      <ExerciseRoutineModal
+        visible={routineModalVisible}
+        petName={pet.name}
+        routine={routine}
+        loading={loadingRoutine}
+        onClose={() => setRoutineModalVisible(false)}
+      />
     </Modal>
   );
 }
@@ -241,7 +296,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#0f172a',
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
-    maxHeight: '90%',
+    width: '100%',
+    alignSelf: 'stretch',
     overflow: 'hidden',
   },
   header: {
@@ -326,6 +382,7 @@ const styles = StyleSheet.create({
   contentContainer: {
     padding: 24,
     paddingBottom: 40,
+    flexGrow: 1,
   },
   quickInfoGrid: {
     flexDirection: 'row',
@@ -409,6 +466,29 @@ const styles = StyleSheet.create({
     color: '#cbd5e1',
     lineHeight: 22,
     fontWeight: '500',
+  },
+  aiButton: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    marginTop: 8,
+    marginBottom: 12,
+    shadowColor: '#43e97b',
+    shadowOpacity: 0.4,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  aiButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 18,
+    gap: 10,
+  },
+  aiButtonText: {
+    fontSize: 16,
+    color: '#fff',
+    fontWeight: '700',
   },
   editButton: {
     borderRadius: 20,

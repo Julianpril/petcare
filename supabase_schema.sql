@@ -14,13 +14,24 @@ CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email VARCHAR(255) UNIQUE NOT NULL,
     username VARCHAR(100) UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
+    password_hash TEXT,
     full_name VARCHAR(255),
     phone VARCHAR(20),
     address TEXT,
     profile_image_url TEXT,
-    role VARCHAR(50) DEFAULT 'user' CHECK (role IN ('user', 'admin', 'veterinarian')),
+    role VARCHAR(50) DEFAULT 'user' CHECK (role IN ('user', 'admin', 'shelter')),
     is_active BOOLEAN DEFAULT true,
+    
+    -- Campos específicos para refugios
+    shelter_name VARCHAR(255),
+    shelter_description TEXT,
+    shelter_license VARCHAR(100),
+    is_verified_shelter BOOLEAN DEFAULT false,
+    
+    -- Google OAuth
+    google_id VARCHAR(255) UNIQUE,
+    auth_provider VARCHAR(50) DEFAULT 'local',
+    
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     last_login TIMESTAMP WITH TIME ZONE
@@ -30,6 +41,8 @@ CREATE TABLE users (
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_username ON users(username);
 CREATE INDEX idx_users_role ON users(role);
+CREATE INDEX idx_users_google_id ON users(google_id);
+CREATE INDEX idx_users_shelter ON users(role, is_verified_shelter) WHERE role = 'shelter';
 
 -- ============================================
 -- TABLA: pets (Mascotas)
@@ -52,6 +65,15 @@ CREATE TABLE pets (
     allergies TEXT[],
     traits TEXT[], -- Características/personalidad: ["juguetón", "cariñoso", etc]
     is_active BOOLEAN DEFAULT true,
+    
+    -- Campos para adopción (refugios)
+    is_for_adoption BOOLEAN DEFAULT false,
+    adoption_status VARCHAR(50) CHECK (adoption_status IN ('available', 'pending', 'adopted')),
+    adoption_fee DECIMAL(10,2),
+    adoption_requirements TEXT,
+    sterilized BOOLEAN,
+    vaccinated BOOLEAN,
+    
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -59,6 +81,7 @@ CREATE TABLE pets (
 -- Índices para pets
 CREATE INDEX idx_pets_owner ON pets(owner_id);
 CREATE INDEX idx_pets_species ON pets(species);
+CREATE INDEX idx_pets_adoption ON pets(is_for_adoption, adoption_status) WHERE is_for_adoption = true;
 CREATE INDEX idx_pets_active ON pets(is_active);
 
 -- ============================================

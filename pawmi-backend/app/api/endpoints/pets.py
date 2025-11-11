@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 router = APIRouter(prefix="/pets", tags=["pets"])
 
 
+@router.get("", response_model=list[PetRead])
 @router.get("/", response_model=list[PetRead])
 def list_pets(
     current_user: User = Depends(get_current_active_user),
@@ -22,6 +23,7 @@ def list_pets(
     return get_pets_by_owner(db, current_user.id)
 
 
+@router.post("", response_model=PetRead, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=PetRead, status_code=status.HTTP_201_CREATED)
 def create_pet_endpoint(
     pet_in: PetCreate,

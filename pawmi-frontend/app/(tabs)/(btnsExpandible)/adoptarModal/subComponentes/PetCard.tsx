@@ -1,10 +1,11 @@
-import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import React from 'react';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 type AdoptablePet = {
   id: string; name: string; breed: string; imageUrl: string; age: string; weight: string;
-  gender: 'Macho' | 'Hembra'; location: string; description: string; traits: string[];
+  species: string; size: string; weightValue?: number | null;
+  gender: 'Macho' | 'Hembra' | 'Desconocido'; location: string; description: string; traits: string[];
   isVaccinated: boolean; isNeutered: boolean; contactInfo: { shelter: string; phone: string; email: string };
 };
 

@@ -69,7 +69,7 @@ export default function ExpandableFAB({
     });
 
     return (
-      <Animated.View 
+      <Animated.View
         key={`option-${index}`}
         style={[
           styles.optionContainer,

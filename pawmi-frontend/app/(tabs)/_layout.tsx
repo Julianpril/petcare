@@ -1,38 +1,20 @@
 // app/(tabs)/_layout.tsx
+import { Stack } from 'expo-router';
 import React from 'react';
-import { Tabs } from 'expo-router';
-import { Platform } from 'react-native';
-import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import Navbar from '../../components/navbar';
-
-function ConditionalNavbar(props: BottomTabBarProps) {
-  const currentRoute = props.state.routes[props.state.index];
-
-  if (currentRoute.name === 'index') {
-    return null;
-  }
-
-  return <Navbar {...props} />;
-}
 
 export default function TabsLayout() {
-
   return (
-    <Tabs
-      tabBar={(props: BottomTabBarProps) => <ConditionalNavbar {...props} />}
+    <Stack
       screenOptions={{
         headerShown: false,
-        tabBarStyle: Platform.select({
-          ios: { position: 'absolute' },
-          default: {},
-        }),
+        animation: 'slide_from_right',
       }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Home' }} />
-      <Tabs.Screen name="explore" options={{ title: 'Explore' }} />
-      <Tabs.Screen name="loader" options={{ title: 'Loader' }} />
-      <Tabs.Screen name="doctor" options={{ title: 'Doctor' }} />
-      <Tabs.Screen name="user" options={{ title: 'Profile' }} />
-    </Tabs>
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="user" options={{ headerShown: false }} />
+      <Stack.Screen name="userIndex" options={{ headerShown: false }} />
+      <Stack.Screen name="refugioIndex" options={{ headerShown: false }} />
+      <Stack.Screen name="walkerIndex" options={{ headerShown: false }} />
+    </Stack>
   );
 }

@@ -1,3 +1,3 @@
-from . import auth, breed, disease, pets, reminders
+from . import adoption, auth, breed, disease, pets, reminders
 
-__all__ = ["auth", "pets", "reminders", "breed", "disease"]
+__all__ = ["auth", "pets", "reminders", "breed", "disease", "adoption"]

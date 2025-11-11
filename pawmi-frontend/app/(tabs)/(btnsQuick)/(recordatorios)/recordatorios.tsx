@@ -2,11 +2,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useState } from 'react';
-import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import AggRecordatorio from '../(subBtnsQuick)/aggRecordatorio';
 import AddButton from '../../../../components/AddButton';
 import { apiClient } from '../../../../lib/api-client';
 import { useAuth } from '../../../../lib/auth-context';
+import { useReminderNotifications } from '../../../../lib/notifications/useReminderNotifications';
 import type { Appointment } from '../../../../lib/recordatorios/types';
 import CalendarComponent from './(subcomponentes)/CCalendarComponentes';
 import AppointmentsList from './(subcomponentes)/Listas';
@@ -18,6 +19,7 @@ export default function Recordatorios() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { currentUser } = useAuth();
+  const { syncMultipleReminders, isReady: notificationsReady } = useReminderNotifications();
 
   const handleOpenModal = () => {
     setModalVisible(true);
@@ -45,7 +47,9 @@ export default function Recordatorios() {
         let timeFormatted: string | undefined;
         if (reminder.time) {
           const [hours, minutes] = reminder.time.split(':');
-          const time = new Date(date);
+          // Parsear fecha como local
+          const [year, month, day] = date.split('-').map(Number);
+          const time = new Date(year, month - 1, day);
           time.setHours(Number(hours ?? 0), Number(minutes ?? 0));
           timeFormatted = time.toLocaleTimeString('es-ES', {
             hour: '2-digit',
@@ -79,6 +83,65 @@ export default function Recordatorios() {
     }, [fetchReminders])
   );
 
+  const handleSyncNotifications = async () => {
+    if (Platform.OS === 'web') {
+      Alert.alert(
+        '⚠️ No disponible en web',
+        'Las notificaciones solo están disponibles en dispositivos móviles (iOS/Android)'
+      );
+      return;
+    }
+
+    if (!notificationsReady) {
+      Alert.alert(
+        'Permisos requeridos',
+        'Primero debes activar las notificaciones desde Perfil > Notificaciones',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    if (appointments.length === 0) {
+      Alert.alert('Sin recordatorios', 'No tienes recordatorios para sincronizar');
+      return;
+    }
+
+    Alert.alert(
+      '🔔 Sincronizar notificaciones',
+      `¿Deseas programar notificaciones para tus ${appointments.length} recordatorios?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Sí, sincronizar',
+          onPress: async () => {
+            try {
+              const data = await apiClient.getReminders();
+              const reminders = (data ?? []).map((r: any) => ({
+                id: r.id,
+                title: r.title,
+                start_date: r.start_date,
+                time: r.time,
+                category: r.category,
+                pet: r.pet,
+                description: r.description,
+              }));
+
+              const result = await syncMultipleReminders(reminders);
+              
+              Alert.alert(
+                '✅ Sincronización completa',
+                `Se programaron ${result.size} notificaciones de ${appointments.length} recordatorios`
+              );
+            } catch (error) {
+              console.error('Error sincronizando:', error);
+              Alert.alert('Error', 'No se pudieron sincronizar las notificaciones');
+            }
+          }
+        }
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient
@@ -96,6 +159,18 @@ export default function Recordatorios() {
             <Ionicons name="time-outline" size={16} color="#ffffff" />
             <Text style={styles.statText}>{appointments.length} eventos</Text>
           </View>
+          
+          {/* Botón de sincronizar notificaciones */}
+          {Platform.OS !== 'web' && appointments.length > 0 && (
+            <TouchableOpacity 
+              style={styles.notificationButton}
+              onPress={handleSyncNotifications}
+            >
+              <Ionicons name="notifications-outline" size={16} color="#ffffff" />
+              <Text style={styles.notificationButtonText}>Sincronizar</Text>
+            </TouchableOpacity>
+          )}
+          
           {selectedDate && (
             <TouchableOpacity 
               style={styles.clearFilterButton}
@@ -214,6 +289,20 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   clearFilterText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  notificationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(139, 92, 246, 0.9)',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+  },
+  notificationButtonText: {
     color: '#ffffff',
     fontSize: 13,
     fontWeight: '600',

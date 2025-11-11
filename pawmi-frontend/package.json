@@ -51,7 +51,11 @@
     "react-native-web": "~0.20.0",
     "react-native-webview": "13.13.5",
     "tailwind-native": "^0.1.10",
-    "tslib": "^2.8.1"
+    "tslib": "^2.8.1",
+    "expo-notifications": "~0.31.4",
+    "expo-device": "~7.1.4",
+    "@react-native-community/datetimepicker": "8.4.1",
+    "expo-location": "~18.1.6"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

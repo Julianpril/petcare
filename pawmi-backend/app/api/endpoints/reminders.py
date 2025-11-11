@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 router = APIRouter(prefix="/reminders", tags=["reminders"])
 
 
+@router.get("", response_model=list[ReminderRead])
 @router.get("/", response_model=list[ReminderRead])
 def list_reminders(
     pet_id: UUID | None = Query(default=None),
@@ -31,6 +32,7 @@ def list_reminders(
     return get_reminders_for_user(db, current_user.id)
 
 
+@router.post("", response_model=ReminderRead, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=ReminderRead, status_code=status.HTTP_201_CREATED)
 def create_reminder_endpoint(
     reminder_in: ReminderCreate,

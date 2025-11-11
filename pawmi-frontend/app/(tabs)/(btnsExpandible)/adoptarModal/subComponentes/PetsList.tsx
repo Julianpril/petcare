@@ -7,10 +7,13 @@ type AdoptablePet = {
   id: string;
   name: string;
   breed: string;
+  species: string;
+  size: string;
   imageUrl: string;
   age: string;
   weight: string;
-  gender: 'Macho' | 'Hembra';
+  weightValue?: number | null;
+  gender: 'Macho' | 'Hembra' | 'Desconocido';
   location: string;
   description: string;
   traits: string[];

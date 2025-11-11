@@ -1,20 +1,29 @@
 ﻿import logging
+from pathlib import Path
 
-from app.api.endpoints import (auth, breed, disease, disease_prediction, pets,
-                               prediagnosis, reminders)
+from app.api.endpoints import (adoption, ai_exercise, auth, breed, disease,
+                               disease_prediction, pet_photos, pets,
+                               prediagnosis, reminders, upload, walkers)
 from app.core.config import settings
 from app.db.session import (LOCAL_URL, SUPABASE_URL, _current_db_url,
                             get_active_database_url)
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 logger = logging.getLogger(__name__)
+
+# Configurar directorio de almacenamiento local
+BASE_DIR = Path(__file__).resolve().parent.parent
+STORAGE_DIR = BASE_DIR / "storage"
+STORAGE_DIR.mkdir(exist_ok=True)
 
 # App
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
     description="Veterinary Diagnosis API with AI",
+    redirect_slashes=False,  # Evita redirects 307 innecesarios
 )
 
 
@@ -66,14 +75,25 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
+# Montar directorio de archivos estáticos para imágenes locales
+# Las imágenes estarán disponibles en http://localhost:8000/storage/pets/imagen.jpg
+app.mount("/storage", StaticFiles(directory=str(STORAGE_DIR)), name="storage")
+logger.info(f"📁 Directorio de almacenamiento local montado: {STORAGE_DIR}")
+
 # Routers
 app.include_router(auth.router)
+app.include_router(upload.router, prefix="/api")
+app.include_router(adoption.router)
 app.include_router(pets.router)
 app.include_router(reminders.router)
+app.include_router(walkers.router)
 app.include_router(breed.router)
 app.include_router(disease.router, prefix="/disease", tags=["Disease Prediction"])
 app.include_router(disease_prediction.router, prefix="/api/ml", tags=["ML Disease Prediction"])
 app.include_router(prediagnosis.router, prefix="/api/prediagnosis", tags=["Prediagnosis Flow"])
+app.include_router(ai_exercise.router, prefix="/api/ai", tags=["AI Exercise Routines"])
+app.include_router(pet_photos.router, prefix="/api", tags=["Pet Photos"])
+app.include_router(walkers.router, prefix="/api", tags=["Walkers"])
 
 
 @app.get("/")

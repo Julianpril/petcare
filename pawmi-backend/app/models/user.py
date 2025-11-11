@@ -12,6 +12,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 if TYPE_CHECKING:
     from .pet import Pet
     from .reminder import Reminder
+    from .walker import Walker
 
 
 class User(Base):
@@ -31,8 +32,14 @@ class User(Base):
     phone: Mapped[str | None] = mapped_column(String(20))
     address: Mapped[str | None] = mapped_column(Text)
     profile_image_url: Mapped[str | None] = mapped_column(Text)
-    role: Mapped[str] = mapped_column(String(50), default="user")
+    role: Mapped[str] = mapped_column(String(50), default="user")  # 'user', 'admin', 'shelter'
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    
+    # Campos específicos para refugios
+    shelter_name: Mapped[str | None] = mapped_column(String(255))  # Nombre del refugio
+    shelter_description: Mapped[str | None] = mapped_column(Text)  # Descripción del refugio
+    shelter_license: Mapped[str | None] = mapped_column(String(100))  # Licencia/registro oficial
+    is_verified_shelter: Mapped[bool] = mapped_column(Boolean, default=False)  # Verificado por admin
     
     # Google OAuth fields
     google_id: Mapped[str | None] = mapped_column(String(255), unique=True, index=True)
@@ -50,3 +57,4 @@ class User(Base):
     reminders: Mapped[list["Reminder"]] = relationship(
         "Reminder", back_populates="user", cascade="all, delete-orphan"
     )
+    walker_profile: Mapped["Walker"] = relationship("Walker", back_populates="user", uselist=False, cascade="all, delete-orphan")

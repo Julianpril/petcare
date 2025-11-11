@@ -7,7 +7,8 @@ from app.models import User
 from app.schemas.user import (GoogleLoginRequest, Token, UserCreate,
                               UserLoginRequest, UserRead)
 from app.services.user import (authenticate_user, create_or_update_google_user,
-                               create_user, get_user_by_email)
+                               create_user, get_user_by_email,
+                               get_user_by_username)
 from fastapi import APIRouter, Depends, HTTPException, status
 from google.auth.transport import requests
 from google.oauth2 import id_token
@@ -18,9 +19,21 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 def register(user_in: UserCreate, db: Session = Depends(get_db)) -> User:
+    # Verificar si el email ya está registrado
     existing_user = get_user_by_email(db, user_in.email)
     if existing_user:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="El email ya está registrado"
+        )
+    
+    # Verificar si el username ya está registrado
+    existing_username = get_user_by_username(db, user_in.username)
+    if existing_username:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="El nombre de usuario ya está registrado"
+        )
 
     return create_user(db, user_in)
 

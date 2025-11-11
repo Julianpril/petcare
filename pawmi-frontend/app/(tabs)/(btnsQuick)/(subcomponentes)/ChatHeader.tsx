@@ -16,9 +16,14 @@ export default function ChatHeader({ onBack, onClear }: ChatHeaderProps) {
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 0 }}
     >
-      <TouchableOpacity onPress={onBack} style={styles.backButton}>
+      <TouchableOpacity 
+        onPress={onBack} 
+        style={styles.backButton}
+        activeOpacity={0.7}
+      >
         <Ionicons name="arrow-back" size={24} color="#ffffff" />
       </TouchableOpacity>
+      
       <View style={styles.headerContent}>
         <View style={styles.headerIconContainer}>
           <Ionicons name="medical" size={24} color="#ffffff" />
@@ -29,8 +34,13 @@ export default function ChatHeader({ onBack, onClear }: ChatHeaderProps) {
           <Text style={styles.subtitle}>Siempre disponible para ti</Text>
         </View>
       </View>
-      <TouchableOpacity onPress={onClear} style={styles.clearButton}>
-        <Ionicons name="trash-outline" size={20} color="#ffffff" />
+      
+      <TouchableOpacity 
+        onPress={onClear} 
+        style={styles.clearButton}
+        activeOpacity={0.7}
+      >
+        <Ionicons name="trash-outline" size={22} color="#ffffff" />
       </TouchableOpacity>
     </LinearGradient>
   );
@@ -52,17 +62,24 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   headerContent: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    marginHorizontal: 12,
   },
   headerIconContainer: {
     position: 'relative',
@@ -90,11 +107,16 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   clearButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
 });

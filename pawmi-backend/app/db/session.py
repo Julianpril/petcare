@@ -55,7 +55,7 @@ def get_active_database_url() -> str:
     
     # Primero intentar Supabase (preferida)
     logger.info("Verificando conexión a Supabase...")
-    if test_database_connection(SUPABASE_URL, timeout=3):
+    if test_database_connection(SUPABASE_URL, timeout=10):  # Aumentado a 10s para redes lentas/universitarias
         if _current_db_url != SUPABASE_URL:
             logger.info("✅ Conectado a Supabase (remota)")
         _current_db_url = SUPABASE_URL
@@ -87,13 +87,14 @@ def get_db() -> Generator[Session, None, None]:
     """
     Dependency que provee una sesión de base de datos.
     Automáticamente usa Supabase si hay conexión, o local si no hay.
+    Con fallback automático si falla la conexión durante una petición.
     """
     # Verificar si cambió la base de datos activa
-    global engine, SessionLocal
+    global engine, SessionLocal, _current_db_url, _last_check_time
     active_url = get_active_database_url()
     
     # Si cambió la URL, recrear el engine
-    if _current_db_url and active_url != engine.url:
+    if _current_db_url and active_url != str(engine.url):
         logger.info(f"Cambiando conexión de base de datos...")
         engine.dispose()
         engine = get_engine()
@@ -101,6 +102,40 @@ def get_db() -> Generator[Session, None, None]:
     
     db = SessionLocal()
     try:
+        # Intentar una query simple para verificar la conexión
+        db.execute(text("SELECT 1"))
         yield db
+    except OperationalError as e:
+        # Si falla la conexión, intentar fallback inmediato
+        logger.error(f"Error de conexión: {str(e)}")
+        logger.info("Intentando fallback a base de datos alternativa...")
+        
+        db.close()
+        
+        # Forzar re-chequeo de la base de datos
+        _last_check_time = 0
+        
+        # Obtener nueva URL (debería hacer fallback)
+        new_url = get_active_database_url()
+        
+        # Recrear engine con nueva URL
+        engine.dispose()
+        engine = create_engine(new_url, pool_pre_ping=True)
+        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, class_=Session)
+        
+        # Crear nueva sesión
+        db = SessionLocal()
+        try:
+            db.execute(text("SELECT 1"))
+            logger.info("✅ Fallback exitoso")
+            yield db
+        except Exception as fallback_error:
+            logger.error(f"❌ Fallback también falló: {str(fallback_error)}")
+            db.close()
+            raise
+    except Exception as e:
+        logger.error(f"Error inesperado en get_db: {str(e)}")
+        db.close()
+        raise
     finally:
         db.close()

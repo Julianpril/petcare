@@ -51,47 +51,45 @@ export default function HamsterLoader({ size = 168, duration = 1000 }: { size?: 
     AccessibilityInfo.announceForAccessibility?.("Cargando");
   }, [t, wheel, blink, duration]);
 
-  // Helpers de interpolación (emulan los keyframes de CSS)
-  const interp = (input: number[], output: number[]) =>
-    t.interpolate({ inputRange: input, outputRange: output });
+  // Helpers para interpolar salidas en deg sin dobles conversiones
+  const keyframes = [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1];
 
-  // Transformaciones clave
-  const hamsterRotate = interp([0, 0.5, 1], [4, 0, 4]); // @keyframes hamster
-  const headRotate   = interp(
-    [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1],
-    [0,   8,     0,   8,     0,   8,     0,    8,    0]
-  );
-  const earRotate    = headRotate.interpolate({
-    inputRange: [0, 8],
-    outputRange: [0, 12],
-    extrapolate: "clamp",
+  const hamsterRotateDeg = t.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: ["4deg", "0deg", "4deg"],
   });
-
-  const bodyRotate   = interp(
-    [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1],
-    [0,  -2,     0,   -2,     0,   -2,     0,   -2,    0]
-  );
-
-  const frLimb = interp(
-    [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1],
-    [50, -30, 50, -30, 50, -30, 50, -30, 50]
-  );
-  const flLimb = interp(
-    [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1],
-    [-30, 50, -30, 50, -30, 50, -30, 50, -30]
-  );
-  const brLimb = interp(
-    [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1],
-    [-60, 20, -60, 20, -60, 20, -60, 20, -60]
-  );
-  const blLimb = interp(
-    [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1],
-    [20, -60, 20, -60, 20, -60, 20, -60, 20]
-  );
-  const tailRotate = interp(
-    [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1],
-    [30, 10, 30, 10, 30, 10, 30, 10, 30]
-  );
+  const headRotateDeg = t.interpolate({
+    inputRange: keyframes,
+    outputRange: ["0deg", "8deg", "0deg", "8deg", "0deg", "8deg", "0deg", "8deg", "0deg"],
+  });
+  const earRotateDeg = t.interpolate({
+    inputRange: keyframes,
+    outputRange: ["0deg", "12deg", "0deg", "12deg", "0deg", "12deg", "0deg", "12deg", "0deg"],
+  });
+  const bodyRotateDeg = t.interpolate({
+    inputRange: keyframes,
+    outputRange: ["0deg", "-2deg", "0deg", "-2deg", "0deg", "-2deg", "0deg", "-2deg", "0deg"],
+  });
+  const frLimbDeg = t.interpolate({
+    inputRange: keyframes,
+    outputRange: ["50deg", "-30deg", "50deg", "-30deg", "50deg", "-30deg", "50deg", "-30deg", "50deg"],
+  });
+  const flLimbDeg = t.interpolate({
+    inputRange: keyframes,
+    outputRange: ["-30deg", "50deg", "-30deg", "50deg", "-30deg", "50deg", "-30deg", "50deg", "-30deg"],
+  });
+  const brLimbDeg = t.interpolate({
+    inputRange: keyframes,
+    outputRange: ["-60deg", "20deg", "-60deg", "20deg", "-60deg", "20deg", "-60deg", "20deg", "-60deg"],
+  });
+  const blLimbDeg = t.interpolate({
+    inputRange: keyframes,
+    outputRange: ["20deg", "-60deg", "20deg", "-60deg", "20deg", "-60deg", "20deg", "-60deg", "20deg"],
+  });
+  const tailRotateDeg = t.interpolate({
+    inputRange: keyframes,
+    outputRange: ["30deg", "10deg", "30deg", "10deg", "30deg", "10deg", "30deg", "10deg", "30deg"],
+  });
 
   const wheelSpin = wheel.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "-360deg"] });
 
@@ -134,7 +132,7 @@ export default function HamsterLoader({ size = 168, duration = 1000 }: { size?: 
             transform: [
               { translateX: -0.8 * em },
               { translateY: 1.85 * em },
-              { rotate: hamsterRotate.interpolate({ inputRange: [-180, 180], outputRange: ["-180deg", "180deg"] }) },
+              { rotate: hamsterRotateDeg },
             ],
           },
         ]}
@@ -148,7 +146,7 @@ export default function HamsterLoader({ size = 168, duration = 1000 }: { size?: 
               height: 3 * em,
               left: 2 * em,
               top: 0.25 * em,
-              transform: [{ rotate: bodyRotate.interpolate({ inputRange: [-180, 180], outputRange: ["-180deg", "180deg"] }) }],
+              transform: [{ rotate: bodyRotateDeg }],
             },
           ]}
         >
@@ -160,12 +158,12 @@ export default function HamsterLoader({ size = 168, duration = 1000 }: { size?: 
                 width: 2.75 * em,
                 height: 2.5 * em,
                 left: -2 * em,
-                transform: [{ rotate: headRotate.interpolate({ inputRange: [-180, 180], outputRange: ["-180deg", "180deg"] }) }],
+                transform: [{ rotate: headRotateDeg }],
               },
             ]}
           >
-            <View style={[styles.ear, { right: -0.25 * em, top: -0.25 * em, width: 0.75 * em, height: 0.75 * em,
-              transform: [{ rotate: earRotate.interpolate({ inputRange: [-180, 180], outputRange: ["-180deg", "180deg"] }) }],
+            <Animated.View style={[styles.ear, { right: -0.25 * em, top: -0.25 * em, width: 0.75 * em, height: 0.75 * em,
+              transform: [{ rotate: earRotateDeg }],
             }]} />
             <Animated.View style={[styles.eye, { left: 1.25 * em, top: 0.375 * em, width: 0.5 * em, height: 0.5 * em, transform: [{ scaleY: blink }] }]} />
             <View style={[styles.nose, { left: 0, top: 0.75 * em, width: 0.2 * em, height: 0.25 * em }]} />
@@ -176,14 +174,14 @@ export default function HamsterLoader({ size = 168, duration = 1000 }: { size?: 
             styles.limbFrontR,
             {
               left: 0.5 * em, top: 2 * em, width: 1 * em, height: 1.5 * em,
-              transform: [{ rotate: frLimb.interpolate({ inputRange: [-180, 180], outputRange: ["-180deg", "180deg"] }) }],
+              transform: [{ rotate: frLimbDeg }],
             },
           ]}/>
           <Animated.View style={[
             styles.limbFrontL,
             {
               left: 0.5 * em, top: 2 * em, width: 1 * em, height: 1.5 * em,
-              transform: [{ rotate: flLimb.interpolate({ inputRange: [-180, 180], outputRange: ["-180deg", "180deg"] }) }],
+              transform: [{ rotate: flLimbDeg }],
             },
           ]}/>
 
@@ -192,14 +190,14 @@ export default function HamsterLoader({ size = 168, duration = 1000 }: { size?: 
             styles.limbBackR,
             {
               left: 2.8 * em, top: 1 * em, width: 1.5 * em, height: 2.5 * em,
-              transform: [{ rotate: brLimb.interpolate({ inputRange: [-180, 180], outputRange: ["-180deg", "180deg"] }) }],
+              transform: [{ rotate: brLimbDeg }],
             },
           ]}/>
           <Animated.View style={[
             styles.limbBackL,
             {
               left: 2.8 * em, top: 1 * em, width: 1.5 * em, height: 2.5 * em,
-              transform: [{ rotate: blLimb.interpolate({ inputRange: [-180, 180], outputRange: ["-180deg", "180deg"] }) }],
+              transform: [{ rotate: blLimbDeg }],
             },
           ]}/>
 
@@ -208,7 +206,7 @@ export default function HamsterLoader({ size = 168, duration = 1000 }: { size?: 
             styles.tail,
             {
               right: -0.5 * em, top: 1.5 * em, width: 1 * em, height: 0.5 * em,
-              transform: [{ rotate: tailRotate.interpolate({ inputRange: [-180, 180], outputRange: ["-180deg", "180deg"] }) }],
+              transform: [{ rotate: tailRotateDeg }],
             },
           ]}/>
         </Animated.View>

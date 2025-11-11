@@ -22,6 +22,14 @@ class PetBase(BaseModel):
     allergies: Optional[List[str]] = None
     traits: Optional[List[str]] = None
     is_active: bool = True
+    
+    # Campos para adopción
+    is_for_adoption: bool = False
+    adoption_status: Optional[str] = Field(default=None, max_length=50)
+    adoption_fee: Optional[Decimal] = Field(default=None, ge=0)
+    adoption_requirements: Optional[str] = None
+    sterilized: Optional[bool] = None
+    vaccinated: Optional[bool] = None
 
 
 class PetCreate(PetBase):
@@ -44,6 +52,14 @@ class PetUpdate(BaseModel):
     allergies: Optional[List[str]] = None
     traits: Optional[List[str]] = None
     is_active: Optional[bool] = None
+    
+    # Campos para adopción
+    is_for_adoption: Optional[bool] = None
+    adoption_status: Optional[str] = Field(default=None, max_length=50)
+    adoption_fee: Optional[Decimal] = Field(default=None, ge=0)
+    adoption_requirements: Optional[str] = None
+    sterilized: Optional[bool] = None
+    vaccinated: Optional[bool] = None
 
 
 class PetRead(PetBase):

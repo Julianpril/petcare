@@ -43,6 +43,15 @@ class Pet(Base):
     allergies: Mapped[list[str] | None] = mapped_column(ARRAY(Text))
     traits: Mapped[list[str] | None] = mapped_column(ARRAY(Text))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    
+    # Campos para adopción (refugios)
+    is_for_adoption: Mapped[bool] = mapped_column(Boolean, default=False)  # Está en adopción
+    adoption_status: Mapped[str | None] = mapped_column(String(50))  # 'available', 'pending', 'adopted'
+    adoption_fee: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))  # Costo de adopción
+    adoption_requirements: Mapped[str | None] = mapped_column(Text)  # Requisitos para adoptar
+    sterilized: Mapped[bool | None] = mapped_column(Boolean)  # ¿Está esterilizado?
+    vaccinated: Mapped[bool | None] = mapped_column(Boolean)  # ¿Tiene vacunas al día?
+    
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=text("NOW()")
     )

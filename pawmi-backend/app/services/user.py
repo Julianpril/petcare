@@ -5,7 +5,7 @@ from uuid import UUID
 from app.core.security import get_password_hash, verify_password
 from app.models import User
 from app.schemas.user import UserCreate, UserUpdate
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 
@@ -15,6 +15,11 @@ def get_user(db: Session, user_id: UUID) -> Optional[User]:
 
 def get_user_by_email(db: Session, email: str) -> Optional[User]:
     stmt = select(User).where(User.email == email)
+    return db.scalar(stmt)
+
+
+def get_user_by_username(db: Session, username: str) -> Optional[User]:
+    stmt = select(User).where(User.username == username)
     return db.scalar(stmt)
 
 
@@ -51,7 +56,10 @@ def update_user(db: Session, db_user: User, user_in: UserUpdate) -> User:
 
 
 def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
-    user = get_user_by_email(db, email)
+    # Buscar usuario por email o username
+    stmt = select(User).where(or_(User.email == email, User.username == email))
+    user = db.scalar(stmt)
+    
     if user is None:
         return None
     # Usuarios de Google no tienen contraseña, no pueden usar login tradicional
