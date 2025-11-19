@@ -52,7 +52,7 @@ En la salida encontrarás opciones para abrir la app en:
 ```bash
 cd pawmi-backend
 python -m venv venv
-source venv/bin/activate  # En Windows: venv\Scripts\activate
+venv\Scripts\activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
@@ -62,7 +62,7 @@ uvicorn app.main:app --reload
 ```bash
 cd pawmi-ml
 python -m venv .venv
-source .venv/bin/activate  # En Windows: .venv\Scripts\activate
+.venv\Scripts\activate
 pip install -r requirements.txt
 
 # Para entrenar modelo
