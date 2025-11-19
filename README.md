@@ -30,8 +30,6 @@ petcare/
 │   ├── models/              # Modelos entrenados
 │   ├── scripts/             # Scripts de entrenamiento
 │   └── notebooks/           # Jupyter notebooks
-│
-└── IA-Course-UdB/          # Material educativo (opcional)
 ```
 
 ## 🎯 Quick Start
